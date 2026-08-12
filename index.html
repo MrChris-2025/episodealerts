@@ -8,13 +8,775 @@
     <link rel="manifest" href="/manifest.json">
     <!-- Optional: Apple touch icon for iOS Safari -->
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
     <!-- Font Awesome for icons (e.g., search icon) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ... your existing CSS ... */
+        /* Embedded CSS for Glass Morph and Responsiveness */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #1f013d, #4a0050, #001f3f);
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-filters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .search-bar, .filters {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #search-input,
+        #genre-select,
+        #year-select,
+        #type-select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1em;
+            outline: none;
+            transition: all 0.3s ease;
+            width: 180px; /* Adjust width as needed */
+        }
+
+        #search-input::placeholder {
+            color: #ddd;
+        }
+
+        #search-input:focus,
+        #genre-select:focus,
+        #year-select:focus,
+        #type-select:focus {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+        }
+
+        #search-button {
+            background: linear-gradient(45deg, #007bff, #00c6ff);
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        #search-button:hover {
+            background: linear-gradient(45deg, #00c6ff, #007bff);
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.5);
+        }
+
+        select option {
+            background-color: #333; /* Dark background for dropdown options */
+            color: #fff;
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 20px 0;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .media-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .media-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .card-poster {
+            width: 100%;
+            height: 350px; /* Fixed height for posters */
+            object-fit: cover;
+            display: block;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .card-content {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 1.4em;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-overview {
+            font-size: 0.9em;
+            color: #e0e0e0;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            flex-grow: 1; /* Allows overview to take available space */
+            display: -webkit-box;
+            -webkit-line-clamp: 4; /* Limit to 4 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-type {
+            font-size: 0.8em;
+            color: #bbb;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .subscribe-button {
+            background: linear-gradient(45deg, #28a745, #218838);
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .subscribe-button:hover:not(:disabled) {
+            background: linear-gradient(45deg, #218838, #28a745);
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+
+        .subscribe-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        #load-more-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        #load-more-button {
+            background: linear-gradient(45deg, #6f42c1, #a16bff);
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        #load-more-button:hover:not(:disabled) {
+            background: linear-gradient(45deg, #a16bff, #6f42c1);
+            box-shadow: 0 0 15px rgba(161, 107, 255, 0.5);
+        }
+
+        #load-more-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            .search-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-bar, .filters {
+                flex-direction: column;
+                gap: 10px;
+            }
+            #search-input,
+            #genre-select,
+            #year-select,
+            #type-select {
+                width: 100%;
+            }
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 20px;
+            }
+            .card-poster {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            .media-card {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- ... rest of your HTML ... -->
+    <header>
+        <div class="container">
+            <h1>Movie & TV Show Gallery</h1>
+            <div class="search-filters">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search movies or TV shows...">
+                    <button id="search-button"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="filters">
+                    <select id="type-select">
+                        <option value="all" selected>All</option>
+                        <option value="movie">Movies</option>
+                        <option value="tv">TV Shows</option>
+                    </select>
+                    <select id="genre-select">
+                        <option value="">All Genres</option>
+                        <!-- Options populated by JS -->
+                    </select>
+                    <select id="year-select">
+                        <option value="">All Years</option>
+                        <!-- Options populated by JS (e.g., last 20 years) -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="gallery" class="gallery">
+            <!-- Movie/TV show cards will be injected here -->
+        </div>
+        <div id="load-more-container">
+            <button id="load-more-button" style="display: none;">Load More</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 TMDB Glass Gallery</p>
+    </footer>
+
+    <!-- Parse SDK -->
+    <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
+    <script>
+        // --- Configuration ---
+        const TMDB_FRONTEND_KEY = '1070730380f5fee0d87cf0382670b255'; // Your TMDB API Key
+        const BACK4APP_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq'; // Your Back4App App ID
+        const BACK4APP_JS_ID = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp'; // Your Back4App JavaScript ID
+        const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8'; // Your VAPID Public Key
+        const PARSE_SERVER_URL = 'https://parseapi.back4app.com/'; // Back4App Parse Server URL
+
+        // Initialize Parse SDK
+        Parse.initialize(BACK4APP_APP_ID, BACK4APP_JS_ID);
+        Parse.serverURL = PARSE_SERVER_URL;
+
+        // Base URL for TMDB images
+        const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+
+        // --- PWA Service Worker Registration & Push Notification Logic ---
+
+        /**
+         * Registers the PWA service worker.
+         * @returns {Promise<ServiceWorkerRegistration|null>}
+         */
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('Service Worker registered with scope:', registration.scope);
+                    return registration;
+                } catch (error) {
+                    console.error('Service Worker registration failed:', error);
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Converts a URL-safe Base64 string to a Uint8Array.
+         * Required for `applicationServerKey` in push subscription options.
+         * @param {string} base64String
+         * @returns {Uint8Array}
+         */
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        /**
+         * Subscribes the user's browser to push notifications.
+         * @returns {Promise<PushSubscription|null>}
+         */
+        async function subscribeUserToPush() {
+            const registration = await navigator.serviceWorker.ready;
+            if (!registration) {
+                console.error('Service Worker not ready for push subscription.');
+                return null;
+            }
+
+            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            const options = {
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey
+            };
+
+            try {
+                // Check if already subscribed
+                let subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    console.log('User is already subscribed:', subscription);
+                    return subscription;
+                }
+
+                // If not subscribed, attempt to subscribe
+                subscription = await registration.pushManager.subscribe(options);
+                console.log('User subscribed:', subscription);
+                return subscription;
+            } catch (err) {
+                console.error('Failed to subscribe the user for push notifications:', err);
+                // Handle various errors like permission denied, invalid VAPID key etc.
+                if (Notification.permission === 'denied') {
+                    alert('Push notifications are blocked. Please enable them in your browser settings.');
+                }
+                return null;
+            }
+        }
+
+        /**
+         * Saves or updates the PWA push subscription to Parse's _Installation class.
+         * @param {PushSubscription} subscription - The browser's PushSubscription object.
+         * @returns {Promise<Parse.Object|null>} - The Parse _Installation object.
+         */
+        async function saveSubscriptionToParse(subscription) {
+            if (!subscription) {
+                console.error("No push subscription provided to save to Parse.");
+                return null;
+            }
+
+            try {
+                // The 'deviceToken' in Parse _Installation typically stores the PWA subscription object.
+                // It's a stringified version of the PushSubscription object.
+                const subscriptionString = JSON.stringify(subscription);
+
+                // Try to find an existing Installation object with this deviceToken
+                const query = new Parse.Query(Parse.Installation);
+                query.equalTo('deviceToken', subscriptionString);
+                let parseInstallation = await query.first();
+
+                if (!parseInstallation) {
+                    // If no existing installation, create a new one
+                    parseInstallation = new Parse.Installation();
+                    parseInstallation.set('deviceType', 'web');
+                    parseInstallation.set('deviceToken', subscriptionString); // Store the subscription object
+                    parseInstallation.set('channels', ['global']); // Default channel
+                    // For Web Push, 'installationId' is often derived from the subscription endpoint
+                    parseInstallation.set('installationId', subscription.endpoint.split('/').pop());
+                } else {
+                    console.log('Existing Parse Installation found and will be updated if needed.');
+                    // You might want to update other fields if they change, though deviceToken should be stable.
+                }
+
+                await parseInstallation.save();
+                console.log('Parse Installation saved/updated:', parseInstallation);
+                // Set the current installation in Parse SDK (important for Parse.User context if used)
+                Parse.Installation._current = Parse.Promise.resolve(parseInstallation);
+                return parseInstallation;
+            } catch (error) {
+                console.error('Error saving push subscription to Parse:', error);
+                alert('Failed to register device for push notifications on the server.');
+                return null;
+            }
+        }
+
+        /**
+         * Gets the current Parse Installation or creates one by subscribing the user to push.
+         * @returns {Promise<Parse.Object|null>}
+         */
+        async function getOrCreateParseInstallation() {
+            let parseInstallation = Parse.Installation.current();
+
+            // If an installation is already loaded and has a deviceToken (meaning it's subscribed)
+            if (parseInstallation && parseInstallation.get('deviceToken')) {
+                console.log('Using existing Parse Installation:', parseInstallation.id);
+                return parseInstallation;
+            } else {
+                // Otherwise, try to subscribe the user and save to Parse
+                const pushSubscription = await subscribeUserToPush();
+                if (pushSubscription) {
+                    parseInstallation = await saveSubscriptionToParse(pushSubscription);
+                    return parseInstallation;
+                }
+            }
+            return null;
+        }
+
+        // --- TMDB API Functions (Client-side) ---
+
+        /**
+         * Fetches data from the TMDB API.
+         * @param {string} path - The API endpoint path (e.g., /search/multi).
+         * @param {object} params - Query parameters.
+         * @returns {Promise<object>} - JSON response from TMDB.
+         */
+        async function fetchTMDB(path, params = {}) {
+            const queryString = new URLSearchParams({
+                api_key: TMDB_FRONTEND_KEY,
+                ...params
+            }).toString();
+            const response = await fetch(`https://api.themoviedb.org/3${path}?${queryString}`);
+            if (!response.ok) {
+                throw new Error(`TMDB API error: ${response.statusText} (${response.status}) for ${path}?${queryString}`);
+            }
+            return response.json();
+        }
+
+        /**
+         * Fetches a list of genres for movies or TV shows.
+         * @param {'movie'|'tv'} type - 'movie' or 'tv'.
+         * @returns {Promise<Array<object>>} - List of genre objects.
+         */
+        async function getGenres(type) {
+            try {
+                const data = await fetchTMDB(`/genre/${type}/list`);
+                return data.genres;
+            } catch (error) {
+                console.error(`Error fetching ${type} genres:`, error);
+                return [];
+            }
+        }
+
+        /**
+         * Performs a search on TMDB for movies, TV shows, or both.
+         * @param {string} query - The search query.
+         * @param {'all'|'movie'|'tv'} type - Type of media to search for.
+         * @param {number} page - Result page number.
+         * @param {string} genre - Genre ID for filtering.
+         * @param {string} year - Release/air year for filtering.
+         * @returns {Promise<Array<object>>} - Search results.
+         */
+        async function searchTMDB(query, type = 'all', page = 1, genre = '', year = '') {
+            let path = '';
+            let params = { query: query, page: page };
+
+            if (genre) {
+                params.with_genres = genre;
+            }
+            if (year) {
+                if (type === 'movie') params.primary_release_year = year;
+                if (type === 'tv') params.first_air_date_year = year;
+            }
+
+            switch (type) {
+                case 'movie':
+                    path = '/search/movie';
+                    break;
+                case 'tv':
+                    path = '/search/tv';
+                    break;
+                case 'all':
+                default:
+                    path = '/search/multi'; // Searches movies, TV shows, and people
+                    break;
+            }
+
+            try {
+                const data = await fetchTMDB(path, params);
+                // Filter out 'person' results if using multi-search for media gallery
+                return data.results.filter(item => item.media_type !== 'person');
+            } catch (error) {
+                console.error('Error searching TMDB:', error);
+                return [];
+            }
+        }
+
+        // --- UI Rendering Functions ---
+
+        /**
+         * Creates an HTML card element for a movie or TV show.
+         * @param {object} item - TMDB media object.
+         * @returns {HTMLElement} - The created card element.
+         */
+        function createMediaCard(item) {
+            const card = document.createElement('div');
+            card.classList.add('media-card');
+
+            // Determine media type for display and button logic
+            const mediaType = item.media_type || (item.title ? 'movie' : 'tv'); // Fallback for multi-search
+
+            const posterPath = item.poster_path ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Image';
+            const title = item.title || item.name;
+            const year = (item.release_date || item.first_air_date)?.split('-')[0] || 'N/A';
+            const overview = item.overview || 'No overview available.';
+
+            // Generate content
+            card.innerHTML = `
+                <div class="card-inner">
+                    <img src="${posterPath}" alt="${title}" class="card-poster">
+                    <div class="card-content">
+                        <h3 class="card-title">${title} (${year})</h3>
+                        <p class="card-overview">${overview}</p>
+                        <p class="card-type">${mediaType === 'movie' ? 'Movie' : 'TV Show'}</p>
+                        ${mediaType === 'tv' ? `<button class="subscribe-button" data-tmdb-id="${item.id}" data-tv-name="${title}">Subscribe for Alerts</button>` : ''}
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        /**
+         * Renders a list of media items into the gallery.
+         * @param {Array<object>} items - List of TMDB media objects.
+         * @param {boolean} append - If true, appends items; otherwise, replaces existing content.
+         */
+        function renderGallery(items, append = false) {
+            const gallery = document.getElementById('gallery');
+            if (!append) {
+                gallery.innerHTML = ''; // Clear existing content if not appending
+            }
+
+            if (items.length === 0 && !append) {
+                gallery.innerHTML = '<p>No results found.</p>';
+                return;
+            }
+
+            items.forEach(item => {
+                if (item.media_type === 'movie' || item.media_type === 'tv' || item.title || item.name) {
+                    gallery.appendChild(createMediaCard(item));
+                }
+            });
+            attachSubscribeListeners(); // Re-attach listeners after new elements are added
+        }
+
+        let currentPage = 1;
+        let currentSearchQuery = '';
+        let currentGenre = '';
+        let currentYear = '';
+        let currentType = 'all';
+
+        /**
+         * Performs a search based on current filter values and renders results.
+         * @param {number} page - The page number to fetch.
+         */
+        async function performSearch(page = 1) {
+            const query = document.getElementById('search-input').value;
+            const genre = document.getElementById('genre-select').value;
+            const year = document.getElementById('year-select').value;
+            const type = document.getElementById('type-select').value;
+
+            // Update current state for pagination
+            if (page === 1) {
+                document.getElementById('gallery').innerHTML = '<p>Loading...</p>';
+                currentSearchQuery = query;
+                currentGenre = genre;
+                currentYear = year;
+                currentType = type;
+            } else {
+                document.getElementById('load-more-button').textContent = 'Loading...';
+                document.getElementById('load-more-button').disabled = true;
+            }
+
+            try {
+                const results = await searchTMDB(query, type, page, genre, year);
+
+                renderGallery(results, page > 1); // Append if loading more, replace otherwise
+
+                currentPage = page;
+                // Show load more button if there might be more results (TMDB API usually returns 20 items per page)
+                document.getElementById('load-more-button').style.display = results.length > 0 ? 'block' : 'none';
+                document.getElementById('load-more-button').disabled = false;
+                document.getElementById('load-more-button').textContent = 'Load More';
+            } catch (error) {
+                console.error("Search failed:", error);
+                document.getElementById('gallery').innerHTML = '<p>Failed to load content. Please try again.</p>';
+                document.getElementById('load-more-button').style.display = 'none';
+            }
+        }
+
+        /**
+         * Attaches event listeners to all 'Subscribe for Alerts' buttons.
+         * This needs to be called after new cards are rendered.
+         */
+        function attachSubscribeListeners() {
+            document.querySelectorAll('.subscribe-button').forEach(button => {
+                button.onclick = async (event) => {
+                    const tmdbId = event.target.dataset.tmdbId;
+                    const tvName = event.target.dataset.tvName;
+
+                    if (!tmdbId) {
+                        alert('Could not get TV Show ID for subscription.');
+                        return;
+                    }
+
+                    // Disable button immediately to prevent multiple clicks
+                    event.target.disabled = true;
+                    event.target.textContent = 'Subscribing...';
+
+                    try {
+                        // 1. Ensure PWA is subscribed and Parse Installation exists
+                        const parseInstallation = await getOrCreateParseInstallation();
+                        if (!parseInstallation) {
+                            alert('Failed to enable push notifications. Please ensure notifications are allowed for this site and try again.');
+                            event.target.disabled = false;
+                            event.target.textContent = 'Subscribe for Alerts';
+                            return;
+                        }
+
+                        // 2. Create or update UserShowSubscription in Parse
+                        const UserShowSubscription = Parse.Object.extend('UserShowSubscription');
+                        const query = new Parse.Query(UserShowSubscription);
+                        query.equalTo('installation', parseInstallation);
+                        query.equalTo('tmdbShowId', parseInt(tmdbId)); // Ensure TMDB ID is a number
+
+                        let subscriptionObject = await query.first();
+
+                        if (subscriptionObject) {
+                            alert(`You are already subscribed to alerts for "${tvName}".`);
+                            event.target.textContent = 'Subscribed!';
+                        } else {
+                            subscriptionObject = new UserShowSubscription();
+                            subscriptionObject.set('installation', parseInstallation);
+                            subscriptionObject.set('tmdbShowId', parseInt(tmdbId));
+                            subscriptionObject.set('tvShowName', tvName); // Store name for convenience/logging
+                            await subscriptionObject.save();
+                            alert(`Successfully subscribed to alerts for "${tvName}"!`);
+                            event.target.textContent = 'Subscribed!';
+                        }
+
+                    } catch (error) {
+                        console.error('Subscription error:', error);
+                        alert(`Failed to subscribe to alerts for "${tvName}". Please try again or check browser console.`);
+                        event.target.disabled = false;
+                        event.target.textContent = 'Subscribe for Alerts';
+                    }
+                };
+            });
+        }
+
+
+        // --- Initialization on DOMContentLoaded ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            await registerServiceWorker(); // Register the service worker early
+
+            // Populate Genre Dropdown
+            // Fetch both movie and TV genres and combine/deduplicate
+            const movieGenres = await getGenres('movie');
+            const tvGenres = await getGenres('tv');
+            const combinedGenres = [...new Map([...movieGenres, ...tvGenres].map(item => [item['id'], item])).values()]; // Deduplicate by ID
+            const genreSelect = document.getElementById('genre-select');
+            combinedGenres.sort((a, b) => a.name.localeCompare(b.name)).forEach(genre => {
+                const option = document.createElement('option');
+                option.value = genre.id;
+                option.textContent = genre.name;
+                genreSelect.appendChild(option);
+            });
+
+            // Populate Year Dropdown (e.g., current year + 5 to current year - 100)
+            const yearSelect = document.getElementById('year-select');
+            const currentYearNum = new Date().getFullYear();
+            for (let i = currentYearNum + 5; i >= currentYearNum - 100; i--) { // Years from future to far past
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelect.appendChild(option);
+            }
+
+            // Event Listeners for search and filters
+            document.getElementById('search-button').addEventListener('click', () => performSearch(1));
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch(1);
+            });
+            document.getElementById('genre-select').addEventListener('change', () => performSearch(1));
+            document.getElementById('year-select').addEventListener('change', () => performSearch(1));
+            document.getElementById('type-select').addEventListener('change', () => performSearch(1));
+            document.getElementById('load-more-button').addEventListener('click', () => performSearch(currentPage + 1));
+
+            // Initial load of content
+            performSearch(1);
+        });
+    </script>
+    <!-- Your PWA service worker script -->
+    <script src="sw.js"></script>
 </body>
 </html>
