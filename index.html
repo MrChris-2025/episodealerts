@@ -46,6 +46,37 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
+        .notification-status-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .notification-status-container p {
+            margin: 5px 0;
+        }
+        #enable-notifications-button {
+            background: linear-gradient(45deg, #ffc107, #ff9800);
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        #enable-notifications-button:hover:not(:disabled) {
+            background: linear-gradient(45deg, #ff9800, #ffc107);
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.5);
+        }
+        #enable-notifications-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .status-granted { color: #28a745; }
+        .status-denied { color: #dc3545; }
+        .status-default { color: #ffc107; }
+
         .search-filters {
             display: flex;
             flex-wrap: wrap;
@@ -293,6 +324,12 @@
     <header>
         <div class="container">
             <h1>Movie & TV Show Gallery</h1>
+
+            <div class="notification-status-container">
+                <p id="notification-status-text">Checking notification status...</p>
+                <button id="enable-notifications-button" style="display: none;">Enable Push Notifications</button>
+            </div>
+
             <div class="search-filters">
                 <div class="search-bar">
                     <input type="text" id="search-input" placeholder="Search movies or TV shows...">
@@ -347,7 +384,45 @@
         // Base URL for TMDB images
         const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
+        // Global variable to hold the Parse Installation object once created/fetched
+        let currentParseInstallation = null;
+
         // --- PWA Service Worker Registration & Push Notification Logic ---
+
+        const notificationStatusText = document.getElementById('notification-status-text');
+        const enableNotificationsButton = document.getElementById('enable-notifications-button');
+
+        /**
+         * Updates the UI to reflect the current push notification permission status.
+         */
+        function updateNotificationUI() {
+            if (!('Notification' in window)) {
+                notificationStatusText.textContent = 'Notifications not supported by this browser.';
+                notificationStatusText.className = 'status-denied';
+                enableNotificationsButton.style.display = 'none';
+                return;
+            }
+
+            switch (Notification.permission) {
+                case 'granted':
+                    notificationStatusText.textContent = 'Push Notifications Enabled.';
+                    notificationStatusText.className = 'status-granted';
+                    enableNotificationsButton.style.display = 'none';
+                    break;
+                case 'denied':
+                    notificationStatusText.textContent = 'Push Notifications Blocked. Please enable in browser settings.';
+                    notificationStatusText.className = 'status-denied';
+                    enableNotificationsButton.style.display = 'none'; // Can't re-ask programmatically
+                    break;
+                case 'default':
+                    notificationStatusText.textContent = 'Enable Push Notifications for episode alerts.';
+                    notificationStatusText.className = 'status-default';
+                    enableNotificationsButton.style.display = 'block';
+                    enableNotificationsButton.disabled = false;
+                    enableNotificationsButton.textContent = 'Enable Push Notifications';
+                    break;
+            }
+        }
 
         /**
          * Registers the PWA service worker.
@@ -361,7 +436,10 @@
                     return registration;
                 } catch (error) {
                     console.error('Service Worker registration failed:', error);
+                    alert('Failed to register service worker for offline capabilities and notifications.');
                 }
+            } else {
+                console.warn('Service Workers are not supported by this browser.');
             }
             return null;
         }
@@ -390,19 +468,23 @@
          * @returns {Promise<PushSubscription|null>}
          */
         async function subscribeUserToPush() {
-            const registration = await navigator.serviceWorker.ready;
-            if (!registration) {
-                console.error('Service Worker not ready for push subscription.');
-                return null;
-            }
-
-            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-            const options = {
-                userVisibleOnly: true,
-                applicationServerKey: applicationServerKey
-            };
+            enableNotificationsButton.disabled = true;
+            enableNotificationsButton.textContent = 'Requesting Permission...';
 
             try {
+                const registration = await navigator.serviceWorker.ready;
+                if (!registration) {
+                    console.error('Service Worker not ready for push subscription.');
+                    updateNotificationUI();
+                    return null;
+                }
+
+                const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+                const options = {
+                    userVisibleOnly: true,
+                    applicationServerKey: applicationServerKey
+                };
+
                 // Check if already subscribed
                 let subscription = await registration.pushManager.getSubscription();
                 if (subscription) {
@@ -416,10 +498,12 @@
                 return subscription;
             } catch (err) {
                 console.error('Failed to subscribe the user for push notifications:', err);
-                // Handle various errors like permission denied, invalid VAPID key etc.
                 if (Notification.permission === 'denied') {
-                    alert('Push notifications are blocked. Please enable them in your browser settings.');
+                    alert('Push notifications are blocked. Please enable them manually in your browser settings.');
+                } else {
+                    alert('Failed to subscribe for push notifications. Please try again.');
                 }
+                updateNotificationUI(); // Update UI after attempt
                 return null;
             }
         }
@@ -436,60 +520,51 @@
             }
 
             try {
-                // The 'deviceToken' in Parse _Installation typically stores the PWA subscription object.
-                // It's a stringified version of the PushSubscription object.
                 const subscriptionString = JSON.stringify(subscription);
 
-                // Try to find an existing Installation object with this deviceToken
                 const query = new Parse.Query(Parse.Installation);
-                query.equalTo('deviceToken', subscriptionString);
+                query.equalTo('deviceToken', subscriptionString); // Check for existing installation with this token
                 let parseInstallation = await query.first();
 
                 if (!parseInstallation) {
-                    // If no existing installation, create a new one
                     parseInstallation = new Parse.Installation();
                     parseInstallation.set('deviceType', 'web');
                     parseInstallation.set('deviceToken', subscriptionString); // Store the subscription object
-                    parseInstallation.set('channels', ['global']); // Default channel
-                    // For Web Push, 'installationId' is often derived from the subscription endpoint
-                    parseInstallation.set('installationId', subscription.endpoint.split('/').pop());
+                    parseInstallation.set('channels', ['global']);
+                    parseInstallation.set('installationId', subscription.endpoint.split('/').pop()); // Unique ID from subscription
                 } else {
                     console.log('Existing Parse Installation found and will be updated if needed.');
-                    // You might want to update other fields if they change, though deviceToken should be stable.
                 }
 
                 await parseInstallation.save();
                 console.log('Parse Installation saved/updated:', parseInstallation);
-                // Set the current installation in Parse SDK (important for Parse.User context if used)
-                Parse.Installation._current = Parse.Promise.resolve(parseInstallation);
+                currentParseInstallation = parseInstallation; // Store globally
                 return parseInstallation;
             } catch (error) {
                 console.error('Error saving push subscription to Parse:', error);
-                alert('Failed to register device for push notifications on the server.');
+                alert('Failed to register device for push notifications on the server. Please try again.');
                 return null;
             }
         }
 
         /**
-         * Gets the current Parse Installation or creates one by subscribing the user to push.
-         * @returns {Promise<Parse.Object|null>}
+         * Checks and sets up global push notification status and Parse Installation.
          */
-        async function getOrCreateParseInstallation() {
-            let parseInstallation = Parse.Installation.current();
+        async function initializePushNotifications() {
+            await registerServiceWorker(); // Always register service worker
 
-            // If an installation is already loaded and has a deviceToken (meaning it's subscribed)
-            if (parseInstallation && parseInstallation.get('deviceToken')) {
-                console.log('Using existing Parse Installation:', parseInstallation.id);
-                return parseInstallation;
-            } else {
-                // Otherwise, try to subscribe the user and save to Parse
-                const pushSubscription = await subscribeUserToPush();
-                if (pushSubscription) {
-                    parseInstallation = await saveSubscriptionToParse(pushSubscription);
-                    return parseInstallation;
+            updateNotificationUI(); // Initial UI update
+
+            if (Notification.permission === 'granted') {
+                // If permission is already granted, try to get/create Parse Installation automatically
+                const subscription = await subscribeUserToPush(); // This will just get existing or re-subscribe without prompt
+                if (subscription) {
+                    currentParseInstallation = await saveSubscriptionToParse(subscription);
                 }
+                updateNotificationUI(); // Final UI update
             }
-            return null;
+            // If default, button will be visible, user needs to click it.
+            // If denied, button is hidden, user needs to change browser settings.
         }
 
         // --- TMDB API Functions (Client-side) ---
@@ -528,17 +603,34 @@
         }
 
         /**
+         * Fetches trending movies and TV shows.
+         * @param {'all'|'movie'|'tv'} type - Type of media to search for.
+         * @param {number} page - Result page number.
+         * @returns {Promise<Array<object>>} - Trending results.
+         */
+        async function fetchTrending(type = 'all', page = 1) {
+            try {
+                const path = `/trending/${type}/week`;
+                const data = await fetchTMDB(path, { page: page });
+                return data.results;
+            } catch (error) {
+                console.error('Error fetching trending TMDB:', error);
+                return [];
+            }
+        }
+
+        /**
          * Performs a search on TMDB for movies, TV shows, or both.
          * @param {string} query - The search query.
          * @param {'all'|'movie'|'tv'} type - Type of media to search for.
          * @param {number} page - Result page number.
          * @param {string} genre - Genre ID for filtering.
          * @param {string} year - Release/air year for filtering.
-         * @returns {Promise<Array<object>>} - Search results.
+         * @returns {Promise<{results: Array<object>, total_pages: number}>} - Search results and total pages.
          */
         async function searchTMDB(query, type = 'all', page = 1, genre = '', year = '') {
             let path = '';
-            let params = { query: query, page: page };
+            let params = { page: page };
 
             if (genre) {
                 params.with_genres = genre;
@@ -548,26 +640,36 @@
                 if (type === 'tv') params.first_air_date_year = year;
             }
 
-            switch (type) {
-                case 'movie':
-                    path = '/search/movie';
-                    break;
-                case 'tv':
-                    path = '/search/tv';
-                    break;
-                case 'all':
-                default:
-                    path = '/search/multi'; // Searches movies, TV shows, and people
-                    break;
+            if (query) {
+                params.query = query;
+                switch (type) {
+                    case 'movie':
+                        path = '/search/movie';
+                        break;
+                    case 'tv':
+                        path = '/search/tv';
+                        break;
+                    case 'all':
+                    default:
+                        path = '/search/multi';
+                        break;
+                }
+            } else { // No query, fetch trending
+                path = `/trending/${type}/week`;
+                // No additional params needed for trending other than page
             }
+
 
             try {
                 const data = await fetchTMDB(path, params);
-                // Filter out 'person' results if using multi-search for media gallery
-                return data.results.filter(item => item.media_type !== 'person');
+                const filteredResults = data.results.filter(item => item.media_type !== 'person');
+                return {
+                    results: filteredResults,
+                    total_pages: data.total_pages
+                };
             } catch (error) {
-                console.error('Error searching TMDB:', error);
-                return [];
+                console.error('Error searching/fetching trending TMDB:', error);
+                return { results: [], total_pages: 0 };
             }
         }
 
@@ -630,43 +732,54 @@
         }
 
         let currentPage = 1;
+        let totalPages = 1; // Keep track of total pages for load more
         let currentSearchQuery = '';
         let currentGenre = '';
         let currentYear = '';
         let currentType = 'all';
 
         /**
-         * Performs a search based on current filter values and renders results.
+         * Performs a search/trending fetch based on current filter values and renders results.
          * @param {number} page - The page number to fetch.
          */
         async function performSearch(page = 1) {
-            const query = document.getElementById('search-input').value;
+            const query = document.getElementById('search-input').value.trim();
             const genre = document.getElementById('genre-select').value;
             const year = document.getElementById('year-select').value;
             const type = document.getElementById('type-select').value;
 
-            // Update current state for pagination
+            // Reset current state if it's a new search/filter, otherwise update for pagination
             if (page === 1) {
                 document.getElementById('gallery').innerHTML = '<p>Loading...</p>';
                 currentSearchQuery = query;
                 currentGenre = genre;
                 currentYear = year;
                 currentType = type;
+                totalPages = 1; // Reset total pages for a new search
             } else {
                 document.getElementById('load-more-button').textContent = 'Loading...';
                 document.getElementById('load-more-button').disabled = true;
             }
 
             try {
-                const results = await searchTMDB(query, type, page, genre, year);
+                const data = await searchTMDB(currentSearchQuery, currentType, page, currentGenre, currentYear);
+                const results = data.results;
+                totalPages = data.total_pages; // Update total pages
 
                 renderGallery(results, page > 1); // Append if loading more, replace otherwise
 
                 currentPage = page;
-                // Show load more button if there might be more results (TMDB API usually returns 20 items per page)
-                document.getElementById('load-more-button').style.display = results.length > 0 ? 'block' : 'none';
-                document.getElementById('load-more-button').disabled = false;
-                document.getElementById('load-more-button').textContent = 'Load More';
+
+                // Update load more button visibility and state
+                const loadMoreButton = document.getElementById('load-more-button');
+                if (currentPage < totalPages && results.length > 0) {
+                    loadMoreButton.style.display = 'block';
+                    loadMoreButton.disabled = false;
+                    loadMoreButton.textContent = 'Load More';
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+
             } catch (error) {
                 console.error("Search failed:", error);
                 document.getElementById('gallery').innerHTML = '<p>Failed to load content. Please try again.</p>';
@@ -689,24 +802,27 @@
                         return;
                     }
 
+                    // Pre-check for notification permission
+                    if (Notification.permission !== 'granted') {
+                        alert('Please enable Push Notifications globally first by clicking the "Enable Push Notifications" button above.');
+                        return;
+                    }
+
+                    // Check if we have a Parse Installation
+                    if (!currentParseInstallation) {
+                        alert('Your device is not yet registered for push notifications. Please try enabling notifications again.');
+                        return;
+                    }
+
                     // Disable button immediately to prevent multiple clicks
                     event.target.disabled = true;
                     event.target.textContent = 'Subscribing...';
 
                     try {
-                        // 1. Ensure PWA is subscribed and Parse Installation exists
-                        const parseInstallation = await getOrCreateParseInstallation();
-                        if (!parseInstallation) {
-                            alert('Failed to enable push notifications. Please ensure notifications are allowed for this site and try again.');
-                            event.target.disabled = false;
-                            event.target.textContent = 'Subscribe for Alerts';
-                            return;
-                        }
-
                         // 2. Create or update UserShowSubscription in Parse
                         const UserShowSubscription = Parse.Object.extend('UserShowSubscription');
                         const query = new Parse.Query(UserShowSubscription);
-                        query.equalTo('installation', parseInstallation);
+                        query.equalTo('installation', currentParseInstallation);
                         query.equalTo('tmdbShowId', parseInt(tmdbId)); // Ensure TMDB ID is a number
 
                         let subscriptionObject = await query.first();
@@ -716,7 +832,7 @@
                             event.target.textContent = 'Subscribed!';
                         } else {
                             subscriptionObject = new UserShowSubscription();
-                            subscriptionObject.set('installation', parseInstallation);
+                            subscriptionObject.set('installation', currentParseInstallation);
                             subscriptionObject.set('tmdbShowId', parseInt(tmdbId));
                             subscriptionObject.set('tvShowName', tvName); // Store name for convenience/logging
                             await subscriptionObject.save();
@@ -737,13 +853,26 @@
 
         // --- Initialization on DOMContentLoaded ---
         document.addEventListener('DOMContentLoaded', async () => {
-            await registerServiceWorker(); // Register the service worker early
+            // Initialize push notifications UI and state
+            await initializePushNotifications();
+
+            // Event listener for global "Enable Notifications" button
+            enableNotificationsButton.addEventListener('click', async () => {
+                const subscription = await subscribeUserToPush();
+                if (subscription) {
+                    await saveSubscriptionToParse(subscription);
+                }
+                updateNotificationUI(); // Update UI after attempt
+            });
 
             // Populate Genre Dropdown
-            // Fetch both movie and TV genres and combine/deduplicate
             const movieGenres = await getGenres('movie');
             const tvGenres = await getGenres('tv');
-            const combinedGenres = [...new Map([...movieGenres, ...tvGenres].map(item => [item['id'], item])).values()]; // Deduplicate by ID
+            // Combine and deduplicate genres by ID, then sort by name
+            const combinedGenresMap = new Map();
+            [...movieGenres, ...tvGenres].forEach(genre => combinedGenresMap.set(genre.id, genre));
+            const combinedGenres = Array.from(combinedGenresMap.values());
+
             const genreSelect = document.getElementById('genre-select');
             combinedGenres.sort((a, b) => a.name.localeCompare(b.name)).forEach(genre => {
                 const option = document.createElement('option');
@@ -772,7 +901,7 @@
             document.getElementById('type-select').addEventListener('change', () => performSearch(1));
             document.getElementById('load-more-button').addEventListener('click', () => performSearch(currentPage + 1));
 
-            // Initial load of content
+            // Initial load of content (trending items if no search query)
             performSearch(1);
         });
     </script>
