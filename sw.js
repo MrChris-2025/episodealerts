@@ -1,38 +1,62 @@
-// public/sw.js - service worker
-self.addEventListener('push', function(event) {
-  if (!event.data) return;
-  let payload = {};
-  try { payload = event.data.json(); } catch (e) { payload = { title: 'Update', body: event.data.text() }; }
-  const title = payload.title || 'New Alert';
-  const data = payload.data || {};
-  const tag = data.episodeUniqueId || (`episode-${data.showId || 'unknown'}`);
-  const options = {
-    body: payload.body || '',
-    data: data,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-96.png',
-    vibrate: [100,50,100],
-    requireInteraction: true,
-    renotify: true,
-    tag: tag,
-    timestamp: data && data.air_date ? Date.parse(data.air_date + "T00:00:00Z") : Date.now(),
-    actions: [{ action: 'open', title: 'Open', icon: '/icons/icon-96.png' }]
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
+// self refers to the service worker itself
+
+// Event listener for push notifications
+self.addEventListener('push', event => {
+    // Check if data is present in the push event
+    const data = event.data ? event.data.json() : {};
+    console.log('Push received:', data);
+
+    const title = data.title || 'New Notification';
+    const options = {
+        body: data.body || 'You have a new update.',
+        icon: '/icons/icon-192x192.png', // Path to your app's icon
+        badge: '/icons/badge-72x72.png', // Path to a badge icon (optional, for some platforms)
+        data: {
+            url: data.url || '/' // Default URL to open when notification is clicked
+        },
+        vibrate: [200, 100, 200], // Optional: Vibration pattern
+    };
+
+    // Show the notification. event.waitUntil ensures the service worker stays alive
+    // until the notification is shown.
+    event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  const url = (event.notification.data && event.notification.data.tmdbUrl) || '/';
-  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-    for (let client of windowClients) {
-      try {
-        const u = new URL(client.url);
-        if (u.pathname === new URL(url, location.origin).pathname) {
-          if (client.focus) return client.focus();
-        }
-      } catch (e) {}
-    }
-    if (clients.openWindow) return clients.openWindow(url);
-  }));
+// Event listener for when a user clicks on a notification
+self.addEventListener('notificationclick', event => {
+    event.notification.close(); // Close the notification
+
+    const urlToOpen = event.notification.data.url;
+
+    // event.waitUntil ensures the service worker stays alive until the window is opened/focused
+    event.waitUntil(
+        clients.openWindow(urlToOpen) // Open the specified URL
+    );
 });
+
+// Optional: Basic caching strategy for offline support (uncomment and customize if needed)
+// self.addEventListener('install', (event) => {
+//     console.log('Service Worker: Installing');
+//     event.waitUntil(
+//         caches.open('tmdb-gallery-cache-v1').then((cache) => {
+//             return cache.addAll([
+//                 '/',
+//                 '/index.html',
+//                 '/sw.js',
+//                 // Add other assets here, like your icons
+//                 // '/icons/icon-192x192.png',
+//                 // '/icons/badge-72x72.png',
+//                 // 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
+//                 // 'https://unpkg.com/parse/dist/parse.min.js'
+//             ]);
+//         })
+//     );
+// });
+
+// self.addEventListener('fetch', (event) => {
+//     event.respondWith(
+//         caches.match(event.request).then((response) => {
+//             return response || fetch(event.request);
+//         })
+//     );
+// });
