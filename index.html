@@ -169,6 +169,11 @@
 
   let currentMode = 'tv', searchTimer = null;
 
+  // Check if App is Added to Home Screen
+  function isInstalled() {
+    return (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true);
+  }
+
   function setMode(m) {
     currentMode = m;
     document.getElementById('mBtn').classList.toggle('active', m === 'movie');
@@ -182,7 +187,6 @@
     searchTimer = setTimeout(performSearch, 500); 
   }
 
-  // Format Helper: M/D/YYYY (e.g. 8/13/2026)
   function fmtDate(d) {
     if (!d) return 'N/A';
     const date = new Date(d);
@@ -237,6 +241,11 @@
   }
 
   async function subscribe(id, name, btn) {
+    if (!isInstalled()) {
+      alert("Please install this app to your Home Screen to subscribe to alerts.");
+      return;
+    }
+
     const sw = await navigator.serviceWorker.ready;
     const pushSub = await sw.pushManager.subscribe({
       userVisibleOnly: true,
@@ -289,6 +298,11 @@
   }
 
   async function deleteSub(id) {
+    if (!isInstalled()) {
+      alert("Please install this app to your Home Screen to manage subscriptions.");
+      return;
+    }
+
     await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: id });
     let subs = JSON.parse(localStorage.getItem('my_subs') || '[]').filter(i => i !== id);
     localStorage.setItem('my_subs', JSON.stringify(subs));
