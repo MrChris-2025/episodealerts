@@ -6,6 +6,7 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0d1117" />
   <link rel="icon" href="./icon-512.png" type="image/png" />
+  
   <title>Liquid Glass Gallery</title>
   
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
@@ -111,25 +112,27 @@
       scrollbar-width: thin;
     }
     .recent-card {
-      min-width: 220px;
+      min-width: 260px;
       padding: 15px;
       border-radius: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .recent-card .info .name { font-weight: 600; font-size: 0.95rem; display: block; }
-    .recent-card .info .date { font-size: 0.75rem; color: #bbb; }
+    .recent-card .info .name { font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 4px; }
+    .recent-card .info .date { font-size: 0.75rem; color: #aaa; display: block; }
+    .recent-card .info .air-status { font-size: 0.7rem; color: #7de0ff; margin-top: 5px; font-weight: 500; }
+
     .delete-btn {
-      background: rgba(255, 50, 50, 0.2);
-      border: 1px solid rgba(255, 50, 50, 0.3);
+      background: rgba(255, 50, 50, 0.1);
+      border: 1px solid rgba(255, 50, 50, 0.2);
       color: #ff8888;
       padding: 8px;
       border-radius: 8px;
       cursor: pointer;
       transition: 0.2s;
     }
-    .delete-btn:hover { background: rgba(255, 50, 50, 0.4); }
+    .delete-btn:hover { background: rgba(255, 50, 50, 0.3); }
 
     /* Main Gallery */
     .gallery {
@@ -177,8 +180,6 @@
     }
 
     .message { text-align: center; padding: 50px; font-size: 1.2rem; grid-column: 1/-1; }
-
-    /* Heroicon Icon Style */
     .icon { width: 18px; height: 18px; fill: currentColor; }
   </style>
 </head>
@@ -222,6 +223,12 @@
 
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; });
+    }
+
+    function formatDate(date) {
+      if (!date) return "N/A";
+      const d = new Date(date);
+      return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
     }
 
     function setMediaType(type) {
@@ -299,7 +306,7 @@
         await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: showId.toString() });
         unmarkShowLocally(showId);
         loadRecentSubscriptions();
-        performSearch(); // Refresh UI
+        performSearch();
       } catch (err) {
         console.error(err);
       }
@@ -314,16 +321,30 @@
           container.innerHTML = '<div class="message">No recent subscriptions.</div>';
           return;
         }
-        results.forEach(sub => {
-          const dateObj = new Date(sub.date);
-          const formattedDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}/${dateObj.getFullYear()}`;
+
+        for (const sub of results) {
+          // Fetch specific episode data for the card
+          let lastAir = "N/A";
+          let nextAir = "None Scheduled";
           
+          try {
+            const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${sub.showId}?api_key=${TMDB_KEY}`);
+            const tmdbData = await tmdbRes.json();
+            lastAir = formatDate(tmdbData.last_air_date);
+            if(tmdbData.next_episode_to_air) {
+              nextAir = formatDate(tmdbData.next_episode_to_air.air_date);
+            }
+          } catch (e) { console.error("TMDB error", e); }
+
           const card = document.createElement('div');
           card.className = 'recent-card glossy';
           card.innerHTML = `
             <div class="info">
               <span class="name">${sub.showName}</span>
-              <span class="date">Subscribed: ${formattedDate}</span>
+              <span class="date">Subscribed: ${formatDate(sub.date)}</span>
+              <div class="air-status">
+                Last: ${lastAir} | Next: ${nextAir}
+              </div>
             </div>
             <button class="delete-btn" onclick="removeSubscription('${sub.showId}')" title="Delete">
               <svg class="icon" viewBox="0 0 20 20" fill="currentColor">
@@ -332,7 +353,7 @@
             </button>
           `;
           container.appendChild(card);
-        });
+        }
       } catch (err) {
         container.innerHTML = '';
       }
@@ -360,7 +381,6 @@
       try {
         let url;
         if (query) {
-          // Fixed search: TMDB search/multi doesn't filter well, so we use specific type search
           url = `https://api.themoviedb.org/3/search/${currentMediaType}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`;
         } else {
           url = `https://api.themoviedb.org/3/discover/${currentMediaType}?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
