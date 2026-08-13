@@ -1,11 +1,22 @@
 self.addEventListener('push', function(event) {
-  const data = event.data ? event.data.json() : { title: 'Alert', body: 'New Episode!' };
+  let data = { title: 'New Alert', body: 'New content is available!' };
+  if (event.data) {
+    data = event.data.json();
+  }
+  const options = {
+    body: data.body,
+    icon: './icon-512.png',
+    badge: './icon-512.png',
+    vibrate: [200, 100, 200]
+  };
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icon-512.png',
-      vibrate: [200, 100, 200]
-    })
+    self.registration.showNotification(data.title, options)
   );
 });
-self.addEventListener('notificationclick', e => { e.notification.close(); e.waitUntil(clients.openWindow('/')); });
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow('/')
+  );
+});
