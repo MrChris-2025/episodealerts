@@ -3,33 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d1117" />
   <title>Liquid Glass Gallery</title>
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
   <style>
     :root {
-      --glass: rgba(255, 255, 255, 0.07);
+      --glass: rgba(255, 255, 255, 0.08);
       --border: rgba(255, 255, 255, 0.15);
-      --blur: blur(20px);
-      --liquid: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.05) 100%);
+      --liquid: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.06) 100%);
     }
 
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
-      background: radial-gradient(circle at top, #1a1c2c, #0d0e14);
+      background: radial-gradient(circle at top, #1c1e2f, #0a0b10);
       background-attachment: fixed;
       color: #fff;
       min-height: 100vh;
     }
 
-    /* Gloss Condensation Effect */
+    /* Glossy Condensation Framework */
     .glossy {
       position: relative;
       background: var(--glass);
-      backdrop-filter: var(--blur);
-      -webkit-backdrop-filter: var(--blur);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--border);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
       overflow: hidden;
     }
 
@@ -39,6 +40,7 @@
       inset: 0;
       background: var(--liquid);
       pointer-events: none;
+      z-index: 1;
     }
 
     header {
@@ -53,28 +55,30 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .brand { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; }
+
     .controls { display: flex; gap: 10px; align-items: center; }
 
-    .toggle-box {
+    .toggle-wrap {
       display: flex;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.3);
       padding: 4px;
       border-radius: 12px;
       border: 1px solid var(--border);
     }
 
-    .tgl {
+    .toggle-btn {
       padding: 8px 18px;
-      border-radius: 8px;
       border: none;
       background: transparent;
       color: #777;
       cursor: pointer;
       font-weight: 700;
+      border-radius: 8px;
       transition: 0.3s;
     }
 
-    .tgl.active { background: rgba(255,255,255,0.1); color: #fff; }
+    .toggle-btn.active { background: rgba(255,255,255,0.1); color: #fff; }
 
     input, select {
       background: rgba(255,255,255,0.05);
@@ -86,143 +90,144 @@
     }
 
     .recent-section { padding: 20px 30px; max-width: 1400px; margin: 0 auto; }
-    .recent-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; }
+    .recent-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; }
 
     .recent-card {
-      min-width: 300px;
-      padding: 15px;
-      border-radius: 18px;
+      min-width: 320px;
+      padding: 18px;
+      border-radius: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .recent-info .name { font-weight: 700; display: block; margin-bottom: 4px; color: #00d4ff; }
-    .recent-info .sub-date { font-size: 0.75rem; color: #aaa; }
-    .recent-info .ep { font-size: 0.7rem; margin-top: 8px; color: #ddd; }
+    .recent-info .name { font-weight: 800; font-size: 1.05rem; display: block; color: #00d4ff; }
+    .recent-info .date-label { font-size: 0.75rem; color: #aaa; margin-top: 2px; display: block; }
+    .recent-info .ep-data { font-size: 0.72rem; color: #eee; margin-top: 8px; font-weight: 500; }
 
-    .del-btn {
-      background: rgba(255, 70, 70, 0.15);
-      border: 1px solid rgba(255,70,70,0.3);
-      color: #ff6b6b;
-      padding: 8px;
-      border-radius: 10px;
+    .delete-btn {
+      background: rgba(255, 60, 60, 0.15);
+      border: 1px solid rgba(255, 60, 60, 0.2);
+      color: #ff7070;
+      padding: 10px;
+      border-radius: 12px;
       cursor: pointer;
+      z-index: 2;
     }
 
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 25px;
+      gap: 30px;
       padding: 30px;
       max-width: 1400px;
       margin: 0 auto;
     }
 
-    .card { border-radius: 20px; transition: 0.3s; }
-    .card:hover { transform: translateY(-5px); }
+    .card { border-radius: 24px; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .card:hover { transform: translateY(-8px); }
     .card img { width: 100%; height: 320px; object-fit: cover; border-bottom: 1px solid var(--border); }
-    .card-body { padding: 15px; }
-    .card-title { font-weight: 700; margin-bottom: 10px; font-size: 1rem; }
+    .card-content { padding: 18px; }
+    .card-title { font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; }
 
     .sub-btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
+      width: 100%; padding: 12px; border: none; border-radius: 12px;
       background: linear-gradient(135deg, #0072ff, #00c6ff);
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
+      color: #fff; font-weight: 700; cursor: pointer;
     }
     .sub-btn.active { background: rgba(255,255,255,0.1); border: 1px solid var(--border); cursor: default; }
 
-    .icon { width: 18px; height: 18px; fill: currentColor; }
+    .icon { width: 20px; height: 20px; fill: currentColor; }
   </style>
 </head>
 <body>
 
 <header class="glossy">
-  <div style="font-size: 1.5rem; font-weight: 900;">GLOSS</div>
+  <div class="brand">GLOSS</div>
   <div class="controls">
-    <div class="toggle-box">
-      <button id="mBtn" class="tgl" onclick="setMode('movie')">MOVIES</button>
-      <button id="tBtn" class="tgl active" onclick="setMode('tv')">TV</button>
+    <div class="toggle-wrap">
+      <button id="mBtn" class="toggle-btn" onclick="setMode('movie')">MOVIES</button>
+      <button id="tBtn" class="toggle-btn active" onclick="setMode('tv')">TV SHOWS</button>
     </div>
-    <input type="text" id="q" placeholder="Instant Search..." oninput="dbnc()">
-    <select id="g" onchange="search()"><option value="">All Genres</option></select>
-    <select id="y" onchange="search()"><option value="">Any Year</option></select>
+    <input type="text" id="searchInput" placeholder="Search..." oninput="debounceSearch()">
+    <select id="genreSelect" onchange="performSearch()"><option value="">Genres</option></select>
+    <select id="yearSelect" onchange="performSearch()"><option value="">Years</option></select>
   </div>
 </header>
 
 <div class="recent-section">
-  <div class="recent-scroll" id="recents"></div>
+  <h3 style="margin-left: 10px; margin-bottom: 15px;">Recent Subscriptions</h3>
+  <div class="recent-scroll" id="recentContainer"></div>
 </div>
 
-<div class="gallery" id="gal"></div>
+<div class="gallery" id="galleryContainer"></div>
 
 <script>
-  const TMDB = '1070730380f5fee0d87cf0382670b255';
+  const TMDB_API = '1070730380f5fee0d87cf0382670b255';
   Parse.initialize('gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq', 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp');
   Parse.serverURL = 'https://parseapi.back4app.com/';
 
-  let mode = 'tv', timeout = null;
+  let currentMode = 'tv', searchTimer = null;
 
   function setMode(m) {
-    mode = m;
+    currentMode = m;
     document.getElementById('mBtn').classList.toggle('active', m === 'movie');
     document.getElementById('tBtn').classList.toggle('active', m === 'tv');
     loadGenres();
-    search();
+    performSearch();
   }
 
-  function dbnc() { clearTimeout(timeout); timeout = setTimeout(search, 500); }
+  function debounceSearch() { 
+    clearTimeout(searchTimer); 
+    searchTimer = setTimeout(performSearch, 500); 
+  }
 
-  function fmt(d) {
+  // Format Helper: M/D/YYYY (e.g. 8/13/2026)
+  function fmtDate(d) {
     if (!d) return 'N/A';
     const date = new Date(d);
     return `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`;
   }
 
   async function loadGenres() {
-    const r = await fetch(`https://api.themoviedb.org/3/genre/${mode}/list?api_key=${TMDB}`);
+    const r = await fetch(`https://api.themoviedb.org/3/genre/${currentMode}/list?api_key=${TMDB_API}`);
     const d = await r.json();
-    const sel = document.getElementById('g');
-    sel.innerHTML = '<option value="">All Genres</option>';
-    d.genres.forEach(g => { sel.innerHTML += `<option value="${g.id}">${g.name}</option>`; });
+    const g = document.getElementById('genreSelect');
+    g.innerHTML = '<option value="">All Genres</option>';
+    d.genres.forEach(item => { g.innerHTML += `<option value="${item.id}">${item.name}</option>`; });
   }
 
-  async function search() {
-    const q = document.getElementById('q').value;
-    const g = document.getElementById('g').value;
-    const y = document.getElementById('y').value;
-    const container = document.getElementById('gal');
+  async function performSearch() {
+    const q = document.getElementById('searchInput').value;
+    const g = document.getElementById('genreSelect').value;
+    const y = document.getElementById('yearSelect').value;
+    const container = document.getElementById('galleryContainer');
     container.innerHTML = 'Loading...';
 
     let url = q 
-      ? `https://api.themoviedb.org/3/search/${mode}?api_key=${TMDB}&query=${q}`
-      : `https://api.themoviedb.org/3/discover/${mode}?api_key=${TMDB}&sort_by=popularity.desc`;
+      ? `https://api.themoviedb.org/3/search/${currentMode}?api_key=${TMDB_API}&query=${encodeURIComponent(q)}`
+      : `https://api.themoviedb.org/3/discover/${currentMode}?api_key=${TMDB_API}&sort_by=popularity.desc`;
     
-    if (y) url += mode === 'movie' ? `&primary_release_year=${y}` : `&first_air_date_year=${y}`;
+    if (y) url += currentMode === 'movie' ? `&primary_release_year=${y}` : `&first_air_date_year=${y}`;
     if (!q && g) url += `&with_genres=${g}`;
 
     const res = await fetch(url);
     const data = await res.json();
-    let items = data.results || [];
-    if (q && g) items = items.filter(i => i.genre_ids.includes(parseInt(g)));
+    let results = data.results || [];
+    if (q && g) results = results.filter(i => i.genre_ids.includes(parseInt(g)));
 
     container.innerHTML = '';
-    const subs = JSON.parse(localStorage.getItem('subs') || '[]');
+    const localSubs = JSON.parse(localStorage.getItem('my_subs') || '[]');
 
-    items.forEach(i => {
-      const isSub = subs.includes(i.id.toString());
+    results.forEach(item => {
+      const isSub = localSubs.includes(item.id.toString());
       const card = document.createElement('div');
       card.className = 'card glossy';
       card.innerHTML = `
-        <img src="https://image.tmdb.org/t/p/w500${i.poster_path}" alt="poster">
-        <div class="card-body">
-          <div class="card-title">${i.title || i.name}</div>
-          <button class="sub-btn ${isSub ? 'active' : ''}" onclick="subscribe('${i.id}', '${(i.title || i.name).replace(/'/g, "")}', this)" ${isSub ? 'disabled' : ''}>
+        <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="poster">
+        <div class="card-content">
+          <div class="card-title">${item.title || item.name}</div>
+          <button class="sub-btn ${isSub ? 'active' : ''}" onclick="subscribe('${item.id}', '${(item.title || item.name).replace(/'/g, "")}', this)" ${isSub ? 'disabled' : ''}>
             ${isSub ? 'Subscribed ✓' : 'Subscribe Alerts'}
           </button>
         </div>
@@ -233,20 +238,20 @@
 
   async function subscribe(id, name, btn) {
     const sw = await navigator.serviceWorker.ready;
-    const s = await sw.pushManager.subscribe({
+    const pushSub = await sw.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8'
     });
     const Obj = Parse.Object.extend("PushSubscription");
     const sub = new Obj();
-    sub.set("subscriptionObject", JSON.parse(JSON.stringify(s)));
+    sub.set("subscriptionObject", JSON.parse(JSON.stringify(pushSub)));
     sub.set("showId", id.toString());
     sub.set("showName", name);
     await sub.save();
     
-    let subs = JSON.parse(localStorage.getItem('subs') || '[]');
+    let subs = JSON.parse(localStorage.getItem('my_subs') || '[]');
     subs.push(id.toString());
-    localStorage.setItem('subs', JSON.stringify(subs));
+    localStorage.setItem('my_subs', JSON.stringify(subs));
     btn.className = 'sub-btn active';
     btn.textContent = 'Subscribed ✓';
     loadRecents();
@@ -254,15 +259,15 @@
 
   async function loadRecents() {
     const res = await Parse.Cloud.run('getRecentSubscriptions');
-    const container = document.getElementById('recents');
+    const container = document.getElementById('recentContainer');
     container.innerHTML = '';
     for (const s of res) {
-      let l = 'N/A', n = 'None';
+      let last = 'N/A', next = 'None';
       try {
-        const r = await fetch(`https://api.themoviedb.org/3/tv/${s.showId}?api_key=${TMDB}`);
+        const r = await fetch(`https://api.themoviedb.org/3/tv/${s.showId}?api_key=${TMDB_API}`);
         const d = await r.json();
-        l = fmt(d.last_air_date);
-        if(d.next_episode_to_air) n = fmt(d.next_episode_to_air.air_date);
+        last = fmtDate(d.last_air_date);
+        if(d.next_episode_to_air) next = fmtDate(d.next_episode_to_air.air_date);
       } catch(e) {}
 
       const div = document.createElement('div');
@@ -270,30 +275,32 @@
       div.innerHTML = `
         <div class="recent-info">
           <span class="name">${s.showName}</span>
-          <span class="sub-date">Subscribed: ${fmt(s.date)}</span>
-          <div class="ep">Last: ${l} | Next: ${n}</div>
+          <span class="date-label">Subscribed: ${fmtDate(s.date)}</span>
+          <div class="ep-data">Last: ${last} | Next: ${next}</div>
         </div>
-        <button class="del-btn" onclick="delSub('${s.showId}')">
-          <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+        <button class="delete-btn" onclick="deleteSub('${s.showId}')">
+          <svg class="icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
         </button>
       `;
       container.appendChild(div);
     }
   }
 
-  async function delSub(id) {
+  async function deleteSub(id) {
     await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: id });
-    let subs = JSON.parse(localStorage.getItem('subs') || '[]').filter(i => i !== id);
-    localStorage.setItem('subs', JSON.stringify(subs));
+    let subs = JSON.parse(localStorage.getItem('my_subs') || '[]').filter(i => i !== id);
+    localStorage.setItem('my_subs', JSON.stringify(subs));
     loadRecents();
-    search();
+    performSearch();
   }
 
   window.onload = () => {
-    const y = document.getElementById('y');
-    for(let i=2027; i>=1950; i--) y.innerHTML += `<option value="${i}">${i}</option>`;
+    const ys = document.getElementById('yearSelect');
+    for(let i=2027; i>=1960; i--) ys.innerHTML += `<option value="${i}">${i}</option>`;
     loadGenres();
-    search();
+    performSearch();
     loadRecents();
     if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   };
