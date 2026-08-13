@@ -560,7 +560,7 @@
         }
         alert(errorMessage + "
 
-Error: " + e.message); // Added e.message for more info
+Error: " + e.message); 
         btn.disabled = false;
         btn.textContent = "Track Episodes"; 
       }
@@ -607,7 +607,7 @@ Error: " + e.message); // Added e.message for more info
       let apiUrl = '';
 
       try {
-        if (!TMDB_KEY || TMDB_KEY === 'YOUR_TMDB_API_KEY') { // Check for placeholder key
+        if (!TMDB_KEY || TMDB_KEY === 'YOUR_TMDB_API_KEY') {
             console.error("TMDB_KEY is not set or is a placeholder.");
             gallery.innerHTML = '<div class="empty-msg">TMDB API Key is missing or invalid. Please check your `TMDB_KEY`.</div>';
             return;
@@ -632,19 +632,22 @@ Error: " + e.message); // Added e.message for more info
           }
         }
 
-        console.log('Generated TMDB API URL:', apiUrl); // DEBUG LOG
-
         const res = await fetch(apiUrl);
         if (!res.ok) {
             console.error('TMDB API response not OK:', res.status, res.statusText);
-            const errorText = await res.text();
+            const errorText = await res.text(); // Get more details from the response body
             console.error('TMDB API Error Body:', errorText);
-            gallery.innerHTML = `<div class="empty-msg">Error fetching data from TMDB. Status: ${res.status}. Please check your API key and network connection.</div>`;
+            let userMessage = `Error fetching data from TMDB. Status: ${res.status}.`;
+            if (res.status === 401) {
+              userMessage += " This usually means your TMDB_KEY is invalid or expired.";
+            } else if (res.status === 404) {
+              userMessage += " The API endpoint might be incorrect.";
+            }
+            gallery.innerHTML = `<div class="empty-msg">${userMessage} Please check your console for more details.</div>`;
             return;
         }
 
         const data = await res.json();
-        console.log('Raw TMDB API Response:', data); // DEBUG LOG
 
         results = data.results.filter(i => i.media_type !== 'person'); 
         
@@ -652,8 +655,6 @@ Error: " + e.message); // Added e.message for more info
           results = results.filter(item => item.media_type === mediaTypeFilter);
         }
         
-        console.log('Filtered Results before rendering:', results); // DEBUG LOG
-
         if (results.length === 0) {
             gallery.innerHTML = '<div class="empty-msg">No results found for your query.</div>';
             return;
@@ -704,7 +705,6 @@ Error: " + e.message); // Added e.message for more info
 
     async function init() {
       // No genre select element in the current UI, so no need to load genres.
-
       performSearch(); // Initial load of trending content
       loadDashboard();
     }
@@ -712,12 +712,16 @@ Error: " + e.message); // Added e.message for more info
     // Attach event listener for "Enter" key on search input and initialize the app
     document.addEventListener('DOMContentLoaded', () => {
       const searchInput = document.getElementById('searchInput');
-      searchInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          event.preventDefault(); // Prevent form submission if applicable
-          performSearch();
-        }
-      });
+      if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default form submission behavior
+            performSearch();
+          }
+        });
+      } else {
+        console.warn("Search input element not found. 'Enter' key search functionality disabled.");
+      }
       init(); 
     });
   </script>
