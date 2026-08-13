@@ -209,11 +209,11 @@
       font-size: 0.75rem;
       padding: 4px 10px;
       border-radius: 20px;
-      background: rgba(var(--success), 0.2); /* Semi-transparent success */
+      background: rgba(34, 197, 94, 0.2); /* Explicit RGBA */
       color: var(--success);
       width: fit-content;
       font-weight: 500;
-      border: 1px solid rgba(var(--success), 0.4);
+      border: 1px solid rgba(34, 197, 94, 0.4); /* Explicit RGBA */
     }
 
     .episode-info {
@@ -233,7 +233,7 @@
       position: absolute;
       top: 15px;
       right: 15px;
-      background: rgba(var(--danger), 0.15);
+      background: rgba(239, 68, 68, 0.15); /* Explicit RGBA */
       border: none;
       color: var(--danger);
       width: 30px;
@@ -246,7 +246,7 @@
       font-weight: bold;
       font-size: 1.1rem;
       transition: background-color 0.2s ease, color 0.2s ease;
-      border: 1px solid rgba(var(--danger), 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.3); /* Explicit RGBA */
     }
 
     .btn-delete:hover { background: var(--danger); color: white; }
@@ -304,7 +304,7 @@
       border-color: var(--success); 
       color: white; 
       cursor: default; 
-      box-shadow: 0 2px 10px rgba(34,197,94,0.4);
+      box-shadow: 0 2px 10px rgba(34, 197, 94, 0.4); /* Explicit RGBA */
     }
     .btn-subscribe.active:hover { background: var(--success); border-color: var(--success); } /* No change on hover when active */
 
@@ -428,7 +428,9 @@
     const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
     const PARSE_JS_KEY = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp';
     const TMDB_KEY = '1070730380f5fee0d87cf0382670b255';
-    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPgG7gcXOEYiFyNsz2Fh8'; /* Ensure this is correct */
+    // IMPORTANT: Ensure this VAPID_PUBLIC_KEY is correctly generated and matches the one configured in your Parse server.
+    // A mismatch or an invalid key will prevent push notifications from working.
+    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPgG7gcXOEYiFyNsz2Fh8'; 
 
     Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
     Parse.serverURL = 'https://parseapi.back4app.com/';
@@ -458,10 +460,8 @@
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A';
       try {
-        // Parse date as UTC to avoid local timezone conversions affecting the date
         const date = new Date(dateString + 'T00:00:00Z'); 
-        // Using UTC methods to construct the desired format
-        const month = date.getUTCMonth() + 1; // getUTCMonth() is 0-indexed
+        const month = date.getUTCMonth() + 1; 
         const day = date.getUTCDate();
         const year = date.getUTCFullYear();
         return `${month}/${day}/${year}`;
@@ -515,7 +515,7 @@
 
     async function subscribe(id, name, btn) {
       if (!swReg) {
-        alert("Push notifications not supported or service worker not registered. Please ensure you are on a secure (HTTPS) connection.");
+        alert("Push notifications not supported or service worker not registered. Ensure your browser supports Service Workers and you are on a secure (HTTPS) connection.");
         return;
       }
       try {
@@ -545,16 +545,18 @@
         btn.classList.add('active');
         loadDashboard();
       } catch (e) { 
-        console.error("Subscription error:", e);
+        console.error("Subscription error details:", e); 
         let errorMessage = "Failed to subscribe. ";
-        if (e.message.includes("permission denied")) {
-            errorMessage += "Notification permission might be blocked.";
-        } else if (e.message.includes("VAPID_PUBLIC_KEY")) {
-            errorMessage += "VAPID key might be incorrect or missing.";
+        if (e.name === "TypeError" && e.message.includes("VAPID_PUBLIC_KEY")) {
+            errorMessage += "The VAPID Public Key might be invalid or malformed.";
+        } else if (e.name === "NotAllowedError") {
+            errorMessage += "Notification permission was denied or blocked by the browser settings.";
         } else if (e.name === "InvalidStateError") {
-            errorMessage += "Push service is not available (e.g., in private browsing).";
+            errorMessage += "Push notifications are not allowed in this browsing context (e.g., Incognito mode without explicit permission, or not over HTTPS).";
+        } else if (e.name === "AbortError" || e.name === "NetworkError") {
+            errorMessage += "A network error occurred or the push service is temporarily unavailable.";
         } else {
-            errorMessage += "An unknown error occurred. Make sure your service worker is correctly configured and the site is served over HTTPS.";
+            errorMessage += "An unknown error occurred. Ensure your `sw.js` is correctly deployed and the site is served over HTTPS.";
         }
         alert(errorMessage);
         btn.disabled = false;
@@ -570,17 +572,13 @@
           browserSubscription = await swReg.pushManager.getSubscription();
         }
 
-        // Call Parse Cloud function to delete the subscription from the backend
         await Parse.Cloud.run('deleteSubscription', { showId: showId, endpoint: browserSubscription ? browserSubscription.endpoint : null });
         
-        // Remove from local storage
         removeLocalSub(showId);
         
-        // Refresh UI
         loadDashboard();
-        performSearch(); // Refresh gallery buttons to show "Track Episodes" again
+        performSearch(); 
 
-        // Attempt to unsubscribe from the browser's push service if a subscription exists
         if (browserSubscription) {
           const success = await browserSubscription.unsubscribe();
           if (!success) {
@@ -594,7 +592,6 @@
       }
     }
 
-    // Standard TMDB Logic
     async function performSearch() {
       const q = document.getElementById('searchInput').value.trim();
       const mediaTypeFilter = document.querySelector('input[name="mediaType"]:checked').value;
@@ -642,7 +639,7 @@
 
         gallery.innerHTML = '';
         results.forEach(item => {
-          const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date); // Infer if media_type is missing
+          const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date); 
           const name = item.name || item.title;
           const year = (item.first_air_date || item.release_date || '').split('-')[0];
           const img = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
@@ -684,17 +681,25 @@
     }
 
     async function init() {
-      // Genre select is removed as per redesign, but the ID still exists.
-      // If genre filtering is desired in the future, it would need to be re-added
-      // and integrated into the TMDB API calls.
-      const sel = document.getElementById('genreSelect');
-      if (sel) sel.remove(); // Remove if it still exists in the DOM after header restructuring.
+      // Genre select element was removed in the previous redesign.
+      // If genre filtering is desired, a new UI element and logic would need to be added.
+      // const sel = document.getElementById('genreSelect'); 
+      // if (sel) sel.remove(); 
 
       performSearch();
       loadDashboard();
     }
 
-    window.onload = init;
+    // Attach event listener for "Enter" key on search input and initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('searchInput');
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          performSearch();
+        }
+      });
+      init(); 
+    });
   </script>
 </body>
 </html>
