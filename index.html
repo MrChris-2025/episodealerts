@@ -28,7 +28,7 @@
       min-height: 100vh;
     }
 
-    /* Liquid Gloss & Condensation Effect */
+    /* Liquid Gloss condensation effect */
     .glossy {
       position: relative;
       background: var(--glass-bg);
@@ -55,7 +55,7 @@
       padding: 15px 30px;
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
+      gap: 15px;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--glass-border);
@@ -63,9 +63,8 @@
 
     .brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
 
-    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-    /* Toggle Switch */
     .toggle-container {
       display: flex;
       background: rgba(0,0,0,0.3);
@@ -89,16 +88,17 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
 
-    input, select, .action-btn {
+    input, select {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--glass-border);
       color: #fff;
-      padding: 10px 15px;
+      padding: 10px 12px;
       border-radius: 10px;
       outline: none;
     }
+    
+    select option { background: #333; }
 
-    /* Recent Subscriptions Section */
     .recent-section {
       padding: 20px 30px;
       max-width: 1300px;
@@ -112,7 +112,7 @@
       scrollbar-width: thin;
     }
     .recent-card {
-      min-width: 260px;
+      min-width: 280px;
       padding: 15px;
       border-radius: 16px;
       display: flex;
@@ -134,7 +134,6 @@
     }
     .delete-btn:hover { background: rgba(255, 50, 50, 0.3); }
 
-    /* Main Gallery */
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -192,9 +191,13 @@
         <button id="toggleMovie" class="toggle-btn" onclick="setMediaType('movie')">Movies</button>
         <button id="toggleTv" class="toggle-btn active" onclick="setMediaType('tv')">TV Shows</button>
       </div>
-      <input type="text" id="searchInput" placeholder="Search..." />
-      <select id="genreSelect"><option value="">All Genres</option></select>
-      <button class="action-btn" onclick="performSearch()">Search</button>
+      <input type="text" id="searchInput" placeholder="Search..." oninput="debounceSearch()" />
+      <select id="genreSelect" onchange="performSearch()">
+        <option value="">All Genres</option>
+      </select>
+      <select id="yearSelect" onchange="performSearch()">
+        <option value="">Any Year</option>
+      </select>
     </div>
   </header>
 
@@ -220,142 +223,41 @@
 
     let currentMediaType = 'tv';
     let swRegistration = null;
+    let searchTimeout = null;
 
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; });
     }
 
+    // Date formatter for 8/13/2026 format
     function formatDate(date) {
       if (!date) return "N/A";
       const d = new Date(date);
-      return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+      // Use UTC to ensure date consistency
+      return `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
     }
 
     function setMediaType(type) {
       currentMediaType = type;
       document.getElementById('toggleMovie').classList.toggle('active', type === 'movie');
       document.getElementById('toggleTv').classList.toggle('active', type === 'tv');
+      populateGenres(); // Refresh genres for new type
       performSearch();
     }
 
-    function urlB64ToUint8Array(base64String) {
-      const padding = '='.repeat((4 - base64String.length % 4) % 4);
-      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-      const rawData = window.atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-      }
-      return outputArray;
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => performSearch(), 500);
     }
 
-    function getSubscribedShows() {
-      const subs = localStorage.getItem('subscribedShows');
-      return subs ? JSON.parse(subs) : [];
-    }
-
-    function markShowAsSubscribedLocally(showId) {
-      const subs = getSubscribedShows();
-      if (!subs.includes(showId.toString())) {
-        subs.push(showId.toString());
-        localStorage.setItem('subscribedShows', JSON.stringify(subs));
-      }
-    }
-
-    function unmarkShowLocally(showId) {
-      let subs = getSubscribedShows();
-      subs = subs.filter(id => id !== showId.toString());
-      localStorage.setItem('subscribedShows', JSON.stringify(subs));
-    }
-
-    async function subscribeToAlerts(showId, showName, btnElement) {
-      if (!swRegistration) return alert('Push not supported.');
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
-
-        btnElement.disabled = true;
-        btnElement.textContent = '...';
-
-        const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
-        const subscription = await swRegistration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey
-        });
-
-        const PushSubClass = Parse.Object.extend("PushSubscription");
-        const newSub = new PushSubClass();
-        newSub.set("subscriptionObject", JSON.parse(JSON.stringify(subscription)));
-        newSub.set("showId", showId.toString());
-        newSub.set("showName", showName);
-        await newSub.save();
-        
-        markShowAsSubscribedLocally(showId);
-        btnElement.textContent = 'Subscribed ✓';
-        btnElement.classList.add('subscribed');
-        loadRecentSubscriptions();
-      } catch (err) {
-        btnElement.disabled = false;
-        btnElement.textContent = 'Subscribe';
-      }
-    }
-
-    async function removeSubscription(showId) {
-      if(!confirm("Unsubscribe from this show?")) return;
-      try {
-        await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: showId.toString() });
-        unmarkShowLocally(showId);
-        loadRecentSubscriptions();
-        performSearch();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function loadRecentSubscriptions() {
-      const container = document.getElementById('recentContainer');
-      try {
-        const results = await Parse.Cloud.run('getRecentSubscriptions');
-        container.innerHTML = '';
-        if (results.length === 0) {
-          container.innerHTML = '<div class="message">No recent subscriptions.</div>';
-          return;
-        }
-
-        for (const sub of results) {
-          // Fetch specific episode data for the card
-          let lastAir = "N/A";
-          let nextAir = "None Scheduled";
-          
-          try {
-            const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${sub.showId}?api_key=${TMDB_KEY}`);
-            const tmdbData = await tmdbRes.json();
-            lastAir = formatDate(tmdbData.last_air_date);
-            if(tmdbData.next_episode_to_air) {
-              nextAir = formatDate(tmdbData.next_episode_to_air.air_date);
-            }
-          } catch (e) { console.error("TMDB error", e); }
-
-          const card = document.createElement('div');
-          card.className = 'recent-card glossy';
-          card.innerHTML = `
-            <div class="info">
-              <span class="name">${sub.showName}</span>
-              <span class="date">Subscribed: ${formatDate(sub.date)}</span>
-              <div class="air-status">
-                Last: ${lastAir} | Next: ${nextAir}
-              </div>
-            </div>
-            <button class="delete-btn" onclick="removeSubscription('${sub.showId}')" title="Delete">
-              <svg class="icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          `;
-          container.appendChild(card);
-        }
-      } catch (err) {
-        container.innerHTML = '';
+    function populateYears() {
+      const yearSelect = document.getElementById('yearSelect');
+      const currentYear = new Date().getFullYear();
+      for (let i = currentYear + 2; i >= 1900; i--) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i;
+        yearSelect.appendChild(opt);
       }
     }
 
@@ -363,6 +265,7 @@
       const res = await fetch(`https://api.themoviedb.org/3/genre/${currentMediaType}/list?api_key=${TMDB_KEY}`);
       const data = await res.json();
       const genreSelect = document.getElementById('genreSelect');
+      const currentVal = genreSelect.value;
       genreSelect.innerHTML = '<option value="">All Genres</option>';
       data.genres.forEach(g => {
         const opt = document.createElement('option');
@@ -370,11 +273,13 @@
         opt.textContent = g.name;
         genreSelect.appendChild(opt);
       });
+      genreSelect.value = currentVal;
     }
 
     async function performSearch() {
       const query = document.getElementById('searchInput').value.trim();
       const genre = document.getElementById('genreSelect').value;
+      const year = document.getElementById('yearSelect').value;
       const gallery = document.getElementById('gallery');
       gallery.innerHTML = '<div class="message">Searching...</div>';
 
@@ -382,14 +287,27 @@
         let url;
         if (query) {
           url = `https://api.themoviedb.org/3/search/${currentMediaType}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`;
+          if (year) {
+            url += currentMediaType === 'movie' ? `&primary_release_year=${year}` : `&first_air_date_year=${year}`;
+          }
         } else {
           url = `https://api.themoviedb.org/3/discover/${currentMediaType}?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
           if (genre) url += `&with_genres=${genre}`;
+          if (year) {
+            url += currentMediaType === 'movie' ? `&primary_release_year=${year}` : `&first_air_date_year=${year}`;
+          }
         }
 
         const response = await fetch(url);
         const data = await response.json();
-        renderGallery(data.results || []);
+        
+        let results = data.results || [];
+        // Local genre filter for text search (TMDB search endpoint doesn't support with_genres)
+        if (query && genre) {
+          results = results.filter(item => item.genre_ids && item.genre_ids.includes(parseInt(genre)));
+        }
+
+        renderGallery(results);
       } catch (err) {
         gallery.innerHTML = '<div class="message">Error loading content.</div>';
       }
@@ -429,9 +347,88 @@
       });
     }
 
-    document.getElementById('searchInput').addEventListener('keypress', e => { if(e.key === 'Enter') performSearch(); });
+    async function loadRecentSubscriptions() {
+      const container = document.getElementById('recentContainer');
+      try {
+        const results = await Parse.Cloud.run('getRecentSubscriptions');
+        container.innerHTML = '';
+        if (results.length === 0) {
+          container.innerHTML = '<div class="message">No recent subscriptions.</div>';
+          return;
+        }
+
+        for (const sub of results) {
+          let lastAir = "N/A";
+          let nextAir = "None Scheduled";
+          try {
+            const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${sub.showId}?api_key=${TMDB_KEY}`);
+            const tmdbData = await tmdbRes.json();
+            lastAir = formatDate(tmdbData.last_air_date);
+            if(tmdbData.next_episode_to_air) nextAir = formatDate(tmdbData.next_episode_to_air.air_date);
+          } catch (e) {}
+
+          const card = document.createElement('div');
+          card.className = 'recent-card glossy';
+          card.innerHTML = `
+            <div class="info">
+              <span class="name">${sub.showName}</span>
+              <span class="date">Subscribed: ${formatDate(sub.date)}</span>
+              <div class="air-status">Last: ${lastAir} | Next: ${nextAir}</div>
+            </div>
+            <button class="delete-btn" onclick="removeSubscription('${sub.showId}')">
+              <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            </button>
+          `;
+          container.appendChild(card);
+        }
+      } catch (err) { container.innerHTML = ''; }
+    }
+
+    async function removeSubscription(showId) {
+      if(!confirm("Unsubscribe?")) return;
+      await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: showId.toString() });
+      unmarkShowLocally(showId);
+      loadRecentSubscriptions();
+      performSearch();
+    }
+
+    function getSubscribedShows() { return JSON.parse(localStorage.getItem('subscribedShows') || '[]'); }
+    function markShowAsSubscribedLocally(id) {
+      const s = getSubscribedShows();
+      if(!s.includes(id.toString())) { s.push(id.toString()); localStorage.setItem('subscribedShows', JSON.stringify(s)); }
+    }
+    function unmarkShowLocally(id) {
+      localStorage.setItem('subscribedShows', JSON.stringify(getSubscribedShows().filter(i => i !== id.toString())));
+    }
+
+    async function subscribeToAlerts(id, name, btn) {
+      if (!swRegistration) return;
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+      btn.disabled = true;
+      const sub = await swRegistration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY) });
+      const PushSub = Parse.Object.extend("PushSubscription");
+      const n = new PushSub();
+      n.set("subscriptionObject", JSON.parse(JSON.stringify(sub)));
+      n.set("showId", id.toString());
+      n.set("showName", name);
+      await n.save();
+      markShowAsSubscribedLocally(id);
+      loadRecentSubscriptions();
+      performSearch();
+    }
+
+    function urlB64ToUint8Array(s) {
+      const p = '='.repeat((4 - s.length % 4) % 4);
+      const b = (s + p).replace(/\-/g, '+').replace(/_/g, '/');
+      const r = window.atob(b);
+      const o = new Uint8Array(r.length);
+      for (let i = 0; i < r.length; ++i) o[i] = r.charCodeAt(i);
+      return o;
+    }
 
     window.onload = () => {
+      populateYears();
       populateGenres();
       performSearch();
       loadRecentSubscriptions();
