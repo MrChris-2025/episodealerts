@@ -4,713 +4,231 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0a0a0c" />
+  <meta name="theme-color" content="#0d1117" />
   <link rel="icon" href="./icon-512.png" type="image/png" />
-  <title>CinemaDash | Track Your Shows</title>
-  
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>Liquid Glass Gallery</title>
   
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
 
   <style>
-    /* New Color Palette & Global Styles */
     :root {
-      --bg-dark: #0f001f; /* Darkest purple-black */
-      --bg-medium: #1f0a38; /* Medium dark purple */
-      --card-bg: #280e4b; /* Card background purple */
-      --accent-purple: #9d4edd; /* Vibrant purple accent */
-      --accent-purple-hover: #b06efc; /* Lighter purple on hover */
-      --text-main: #e0e0e0;
-      --text-dim: #a0a0a0;
-      --danger: #ef4444;
-      --success: #22c55e;
-      --border-color: #3b1b60; /* Subtle border color */
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-blur: blur(15px);
+      --liquid-gloss: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%);
     }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+    
     body {
       margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
-      color: var(--text-main);
-      line-height: 1.6;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top left, #232526, #414345);
+      background-attachment: fixed;
+      color: #fff;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
-    /* Layout Containers */
-    .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; width: 100%; }
+    /* Liquid Gloss & Condensation Effect */
+    .glossy {
+      position: relative;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
 
-    /* Header */
+    .glossy::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--liquid-gloss);
+      pointer-events: none;
+      z-index: 1;
+    }
+
     header {
-      background: rgba(15, 0, 31, 0.8); /* Slightly transparent for blur effect */
-      backdrop-filter: blur(15px);
       position: sticky;
       top: 0;
       z-index: 100;
-      padding: 15px 0;
-      border-bottom: 1px solid var(--border-color);
+      padding: 15px 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
+
+    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      background: rgba(0,0,0,0.3);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+    }
+    .toggle-btn {
+      padding: 6px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #aaa;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .toggle-btn.active {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
 
-    header .nav-flex {
+    input, select, .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    /* Recent Subscriptions Section */
+    .recent-section {
+      padding: 20px 30px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    .recent-scroll {
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+      padding-bottom: 15px;
+      scrollbar-width: thin;
+    }
+    .recent-card {
+      min-width: 220px;
+      padding: 15px;
+      border-radius: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 20px;
     }
-
-    h1 { margin: 0; font-size: 1.8rem; font-weight: 700; letter-spacing: -0.8px; color: var(--text-main); }
-    h1 span { color: var(--accent-purple); }
-
-    /* Search & Filter Section */
-    .search-section {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      padding: 25px 0;
-      width: 100%;
-      max-width: 600px; /* Constrain search section width */
-      margin: 20px auto; /* Center it */
-    }
-
-    .search-input-group {
-      display: flex;
-      background: var(--card-bg);
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-
-    .search-input-group input {
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      padding: 12px 18px;
-      flex-grow: 1;
-      font-family: inherit;
-      font-size: 1rem;
-      outline: none;
-      &::placeholder { color: var(--text-dim); }
-    }
-
-    .btn-search {
-      background: var(--accent-purple);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 0 12px 12px 0; /* Only right corners */
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      font-size: 0.95rem;
-      flex-shrink: 0;
-    }
-
-    .btn-search:hover { background: var(--accent-purple-hover); transform: translateY(-1px); }
-    .btn-search:active { transform: translateY(0); }
-
-    /* TV/Movies Toggle */
-    .media-type-toggle {
-      display: flex;
-      background: var(--bg-medium);
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
-      width: fit-content; /* Make it fit content */
-      margin: 0 auto; /* Center the toggle */
-    }
-
-    .media-type-toggle input[type="radio"] {
-      display: none;
-    }
-
-    .media-type-toggle label {
-      padding: 10px 18px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      color: var(--text-dim);
-      transition: background-color 0.2s ease, color 0.2s ease;
-      flex: 1;
-      text-align: center;
-      white-space: nowrap;
-      position: relative;
-    }
-
-    .media-type-toggle input[type="radio"]:checked + label {
-      background-color: var(--accent-purple);
-      color: var(--text-main);
-      font-weight: 500;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-
-    /* Section Headers */
-    .section-label {
-      margin: 50px 0 25px;
-      font-size: 1.3rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      color: var(--text-main);
-      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    }
-
-    .section-label::after {
-      content: '';
-      height: 1px;
-      background: var(--border-color);
-      flex-grow: 1;
-    }
-
-    /* Tracked Cards Dashboard - Compact & Modern */
-    .tracked-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    }
-
-    .tracked-card {
-      background: var(--card-bg);
-      border-radius: 15px;
-      padding: 18px;
-      border: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-      transition: transform 0.2s ease;
-    }
-
-    .tracked-card:hover { transform: translateY(-3px); }
-
-    .tracked-card .title { 
-      font-weight: 600; 
-      font-size: 1.05rem; 
-      color: var(--text-main); 
-      padding-right: 35px; 
-      margin-bottom: 5px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .status-badge {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: rgba(34, 197, 94, 0.2); /* Explicit RGBA */
-      color: var(--success);
-      width: fit-content;
-      font-weight: 500;
-      border: 1px solid rgba(34, 197, 94, 0.4); /* Explicit RGBA */
-    }
-
-    .episode-info {
-      background: var(--bg-medium);
-      border-radius: 10px;
-      padding: 10px 15px;
-      font-size: 0.88rem;
-      border: 1px solid var(--border-color);
-    }
-
-    .episode-info div { display: flex; justify-content: space-between; margin-bottom: 5px; }
-    .episode-info div:last-child { margin-bottom: 0; }
-    .episode-info span { color: var(--text-dim); }
-    .episode-info b { color: var(--accent-purple-hover); font-weight: 600; }
-
-    .btn-delete {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(239, 68, 68, 0.15); /* Explicit RGBA */
-      border: none;
-      color: var(--danger);
-      width: 30px;
-      height: 30px;
+    .recent-card .info .name { font-weight: 600; font-size: 0.95rem; display: block; }
+    .recent-card .info .date { font-size: 0.75rem; color: #bbb; }
+    .delete-btn {
+      background: rgba(255, 50, 50, 0.2);
+      border: 1px solid rgba(255, 50, 50, 0.3);
+      color: #ff8888;
+      padding: 8px;
       border-radius: 8px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 1.1rem;
-      transition: background-color 0.2s ease, color 0.2s ease;
-      border: 1px solid rgba(239, 68, 68, 0.3); /* Explicit RGBA */
+      transition: 0.2s;
     }
+    .delete-btn:hover { background: rgba(255, 50, 50, 0.4); }
 
-    .btn-delete:hover { background: var(--danger); color: white; }
-
-    /* Main Gallery Grid */
+    /* Main Gallery */
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 30px;
-      padding-bottom: 50px;
-      flex-grow: 1; /* Allow gallery to take available space */
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 25px;
+      padding: 30px;
+      max-width: 1300px;
+      margin: 0 auto;
     }
 
-    .movie-card {
-      background: var(--card-bg);
-      border-radius: 15px;
-      overflow: hidden;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-      border: 1px solid var(--border-color);
+    .card {
+      border-radius: 20px;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
+    .card:hover { transform: scale(1.03); }
 
-    .movie-card:hover { transform: scale(1.04); box-shadow: 0 12px 35px rgba(0,0,0,0.6); }
-
-    .poster-wrap { position: relative; aspect-ratio: 2/3; background: #27272a; }
-    .poster-wrap img { 
-      width: 100%; 
-      height: 100%; 
-      object-fit: cover; 
-      display: block;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
-    .card-title { font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); margin-bottom: 5px;}
-    .card-meta { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 15px; }
-
-    .btn-subscribe {
+    .card img {
       width: 100%;
-      background: var(--bg-medium);
-      border: 1px solid var(--border-color);
-      color: var(--accent-purple);
-      padding: 10px;
+      height: 320px;
+      object-fit: cover;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .card-info { padding: 18px; }
+    .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; }
+    .card-meta { font-size: 0.8rem; color: #ccc; margin-bottom: 15px; }
+
+    .subscribe-btn {
+      width: 100%;
+      padding: 12px;
       border-radius: 10px;
-      font-size: 0.9rem;
-      font-weight: 500;
+      border: none;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: white;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: auto; /* Push to bottom */
-      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      z-index: 2;
+      position: relative;
+    }
+    .subscribe-btn.subscribed {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--glass-border);
+      cursor: default;
     }
 
-    .btn-subscribe:hover { background: var(--border-color); color: var(--accent-purple-hover); }
-    .btn-subscribe.active { 
-      background: var(--success); 
-      border-color: var(--success); 
-      color: white; 
-      cursor: default; 
-      box-shadow: 0 2px 10px rgba(34, 197, 94, 0.4); /* Explicit RGBA */
-    }
-    .btn-subscribe.active:hover { background: var(--success); border-color: var(--success); } /* No change on hover when active */
+    .message { text-align: center; padding: 50px; font-size: 1.2rem; grid-column: 1/-1; }
 
-
-    /* Empty States */
-    .empty-msg { 
-      text-align: center; 
-      color: var(--text-dim); 
-      padding: 60px 20px; 
-      grid-column: 1/-1; 
-      font-size: 1.1rem;
-      background: var(--bg-medium);
-      border-radius: 15px;
-      border: 1px solid var(--border-color);
-      margin: 20px 0;
-    }
-
-    /* Mobile Compatibility */
-    @media (max-width: 768px) {
-      .container { padding: 0 15px; }
-      header .nav-flex { 
-        flex-direction: column; 
-        align-items: stretch; 
-        gap: 15px;
-      }
-      h1 { font-size: 1.5rem; text-align: center; }
-      .search-section { 
-        padding: 15px 0; 
-        margin: 15px auto;
-        max-width: 100%;
-      }
-      .search-input-group { 
-        flex-direction: column; 
-        border-radius: 12px;
-      }
-      .btn-search { 
-        width: 100%; 
-        border-radius: 0 0 12px 12px; /* Bottom corners */
-        padding: 12px 20px;
-      }
-      .search-input-group input { 
-        border-radius: 12px 12px 0 0;
-        padding: 15px 18px;
-      }
-      .media-type-toggle {
-        width: 100%; /* Full width toggle */
-        border-radius: 10px;
-      }
-      .media-type-toggle label {
-        flex: 1; /* Distribute space evenly */
-        padding: 12px 10px;
-      }
-      .gallery { 
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-        gap: 20px;
-      }
-      .section-label { font-size: 1.1rem; margin: 30px 0 20px; }
-      .tracked-grid { grid-template-columns: 1fr; gap: 15px; } /* Stack tracked cards on mobile */
-      .tracked-card { padding: 15px; }
-      .tracked-card .title { font-size: 0.95rem; }
-      .episode-info { font-size: 0.8rem; padding: 8px 12px; }
-      .btn-delete { top: 12px; right: 12px; width: 26px; height: 26px; font-size: 1rem; }
-      .movie-card { border-radius: 12px; }
-      .card-content { padding: 12px; }
-      .card-title { font-size: 0.9rem; }
-      .card-meta { font-size: 0.75rem; margin-bottom: 10px; }
-      .btn-subscribe { font-size: 0.85rem; padding: 8px; border-radius: 8px; }
-    }
-
-    @media (max-width: 480px) {
-      h1 { font-size: 1.3rem; }
-      .section-label { font-size: 1rem; margin: 25px 0 15px; }
-      .gallery { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
-      .movie-card { border-radius: 10px; }
-      .card-content { padding: 10px; }
-      .card-title { font-size: 0.85rem; }
-      .card-meta { font-size: 0.7rem; margin-bottom: 8px; }
-      .btn-subscribe { font-size: 0.8rem; padding: 7px; border-radius: 7px; }
-    }
+    /* Heroicon Icon Style */
+    .icon { width: 18px; height: 18px; fill: currentColor; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="container nav-flex">
-      <h1>Cinema<span>Dash</span></h1>
+  <header class="glossy">
+    <div class="brand">GLOSS</div>
+    <div class="controls">
+      <div class="toggle-container">
+        <button id="toggleMovie" class="toggle-btn" onclick="setMediaType('movie')">Movies</button>
+        <button id="toggleTv" class="toggle-btn active" onclick="setMediaType('tv')">TV Shows</button>
+      </div>
+      <input type="text" id="searchInput" placeholder="Search..." />
+      <select id="genreSelect"><option value="">All Genres</option></select>
+      <button class="action-btn" onclick="performSearch()">Search</button>
     </div>
   </header>
 
-  <main class="container">
-    <!-- Search & Filter Section -->
-    <div class="search-section">
-      <div class="search-input-group">
-        <input type="text" id="searchInput" placeholder="Search for a show or movie..." />
-        <button class="btn-search" onclick="performSearch()">Search</button>
-      </div>
-      <div class="media-type-toggle">
-        <input type="radio" id="toggleAll" name="mediaType" value="all" checked onchange="performSearch()">
-        <label for="toggleAll">All</label>
-        <input type="radio" id="toggleMovies" name="mediaType" value="movie" onchange="performSearch()">
-        <label for="toggleMovies">Movies</label>
-        <input type="radio" id="toggleTV" name="mediaType" value="tv" onchange="performSearch()">
-        <label for="toggleTV">TV Shows</label>
-      </div>
+  <div class="recent-section">
+    <h3 style="margin-left: 10px;">Recent Subscriptions</h3>
+    <div class="recent-scroll" id="recentContainer">
+      <div class="message">Loading...</div>
     </div>
+  </div>
 
-    <!-- DASHBOARD: TRACKED SHOWS -->
-    <div id="trackedSection" style="display:none;">
-      <div class="section-label">Your Tracked Subscriptions</div>
-      <div class="tracked-grid" id="trackedGrid"></div>
-    </div>
-
-    <!-- MAIN EXPLORE GALLERY -->
-    <div class="section-label">Explore Content</div>
-    <div class="gallery" id="gallery">
-      <div class="empty-msg">Loading content...</div>
-    </div>
-  </main>
+  <div class="gallery" id="gallery">
+    <div class="message">Loading content...</div>
+  </div>
 
   <script>
     const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
     const PARSE_JS_KEY = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp';
-    const TMDB_KEY = '1070730380f5fee0d87cf0382670b255'; // THIS KEY MUST BE VALID AND ACTIVE
-    // IMPORTANT: Ensure this VAPID_PUBLIC_KEY is correctly generated and matches the one configured in your Parse server.
-    // A mismatch or an invalid key will prevent push notifications from working.
-    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPgG7gcXOEYiFyNsz2Fh8'; 
+    const TMDB_KEY = '1070730380f5fee0d87cf0382670b255';
+    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8';
 
-    try {
-      Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
-      Parse.serverURL = 'https://parseapi.back4app.com/';
-    } catch (e) {
-      console.error("Parse initialization failed:", e);
-      alert("Error: Parse initialization failed. Check your PARSE_APP_ID and PARSE_JS_KEY constants.");
-    }
-    
+    Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
+    Parse.serverURL = 'https://parseapi.back4app.com/';
 
-    let swReg = null;
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(reg => {
-        swReg = reg;
-        console.log('Service Worker registered!');
-      }).catch(error => {
-        console.error('Service Worker registration failed:', error);
-      });
+    let currentMediaType = 'tv';
+    let swRegistration = null;
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; });
     }
 
-    // Local Storage Helpers
-    const getLocalSubs = () => JSON.parse(localStorage.getItem('my_subs') || '[]');
-    const saveLocalSub = (id) => {
-      const s = getLocalSubs();
-      if(!s.includes(id)) { s.push(id); localStorage.setItem('my_subs', JSON.stringify(s)); }
-    };
-    const removeLocalSub = (id) => {
-      const s = getLocalSubs().filter(i => i != id);
-      localStorage.setItem('my_subs', JSON.stringify(s));
-    };
-
-    // Helper to format date to M/D/YYYY
-    const formatDate = (dateString) => {
-      if (!dateString) return 'N/A';
-      try {
-        const date = new Date(dateString + 'T00:00:00Z'); 
-        const month = date.getUTCMonth() + 1; 
-        const day = date.getUTCDate();
-        const year = date.getUTCFullYear();
-        return `${month}/${day}/${year}`;
-      } catch (e) {
-        console.error("Error formatting date:", dateString, e);
-        return 'N/A';
-      }
-    };
-
-    /**
-     * LOAD DASHBOARD DATA
-     * Fetches details from TMDB for each unique subscription
-     */
-    async function loadDashboard() {
-      const grid = document.getElementById('trackedGrid');
-      const section = document.getElementById('trackedSection');
-      
-      try {
-        // Ensure Parse is initialized before calling Cloud functions
-        if (!Parse.applicationId) {
-            console.error("Parse is not initialized. Cannot load dashboard.");
-            return;
-        }
-
-        const subs = await Parse.Cloud.run('getRecentSubscriptions');
-        if (!subs || subs.length === 0) {
-          section.style.display = 'none';
-          return;
-        }
-
-        section.style.display = 'block';
-        grid.innerHTML = '';
-
-        for (const show of subs) {
-          const res = await fetch(`https://api.themoviedb.org/3/tv/${show.showId}?api_key=${TMDB_KEY}`);
-          if (!res.ok) {
-              console.error(`Failed to fetch TV details for ${show.showName} (ID: ${show.showId}):`, res.status, res.statusText);
-              continue; // Skip this show if fetching details failed
-          }
-          const details = await res.json();
-          
-          const card = document.createElement('div');
-          card.className = 'tracked-card';
-          
-          const lastEpDate = details.last_episode_to_air ? formatDate(details.last_episode_to_air.air_date) : 'N/A';
-          const nextEpDate = details.next_episode_to_air ? formatDate(details.next_episode_to_air.air_date) : 'TBA';
-          
-          card.innerHTML = `
-            <button class="btn-delete" onclick="unsubscribe('${show.showId}')" title="Unsubscribe">×</button>
-            <div class="status-badge">Alerts Enabled</div>
-            <div class="title">${show.showName}</div>
-            <div class="episode-info">
-              <div><span>Last Aired:</span> <b>${lastEpDate}</b></div>
-              <div><span>Next Episode:</span> <b>${nextEpDate}</b></div>
-            </div>
-          `;
-          grid.appendChild(card);
-        }
-      } catch (err) { console.error("Dash error:", err); }
-    }
-
-    async function subscribe(id, name, btn) {
-      if (!swReg) {
-        alert("Push notifications not supported or service worker not registered. Ensure your browser supports Service Workers and you are on a secure (HTTPS) connection.");
-        return;
-      }
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          alert("Notification permission denied. Cannot track shows and send alerts.");
-          return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = "Syncing...";
-
-        const subObj = await swReg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-
-        const PSub = Parse.Object.extend("PushSubscription");
-        const ps = new PSub();
-        ps.set("subscriptionObject", JSON.parse(JSON.stringify(subObj)));
-        ps.set("showId", id.toString());
-        ps.set("showName", name);
-        await ps.save();
-
-        saveLocalSub(id.toString());
-        btn.textContent = "Tracked ✓";
-        btn.classList.add('active');
-        loadDashboard();
-      } catch (e) { 
-        console.error("Subscription error details:", e); 
-        let errorMessage = "Failed to subscribe. ";
-        if (e.name === "TypeError" && e.message.includes("VAPID_PUBLIC_KEY")) {
-            errorMessage += "The VAPID Public Key might be invalid or malformed.";
-        } else if (e.name === "NotAllowedError") {
-            errorMessage += "Notification permission was denied or blocked by the browser settings.";
-        } else if (e.name === "InvalidStateError") {
-            errorMessage += "Push notifications are not allowed in this browsing context (e.g., Incognito mode without explicit permission, or not over HTTPS).";
-        } else if (e.name === "AbortError" || e.name === "NetworkError") {
-            errorMessage += "A network error occurred or the push service is temporarily unavailable.";
-        } else {
-            errorMessage += "An unknown error occurred. Ensure your `sw.js` is correctly deployed and the site is served over HTTPS.";
-        }
-        alert(errorMessage + "
-
-Error: " + e.message); 
-        btn.disabled = false;
-        btn.textContent = "Track Episodes"; 
-      }
-    }
-
-    async function unsubscribe(showId) {
-      if(!confirm("Stop alerts for this show?")) return;
-      try {
-        let browserSubscription = null;
-        if (swReg && swReg.pushManager) {
-          browserSubscription = await swReg.pushManager.getSubscription();
-        }
-
-        await Parse.Cloud.run('deleteSubscription', { showId: showId, endpoint: browserSubscription ? browserSubscription.endpoint : null });
-        
-        removeLocalSub(showId);
-        
-        loadDashboard();
-        performSearch(); 
-
-        if (browserSubscription) {
-          const success = await browserSubscription.unsubscribe();
-          if (!success) {
-            console.warn("Browser unsubscribe failed, subscription might not have existed or was already invalid.");
-          }
-        }
-
-      } catch (e) { 
-        console.error("Unsubscribe error:", e);
-        alert("Failed to delete subscription. It might have already been removed or an error occurred. Please try again."); 
-      }
-    }
-
-    async function performSearch() {
-      const q = document.getElementById('searchInput').value.trim();
-      const mediaTypeFilter = document.querySelector('input[name="mediaType"]:checked').value;
-      
-      const gallery = document.getElementById('gallery');
-      const localSubs = getLocalSubs();
-      
-      // Immediately set a loading message, which should be overwritten quickly
-      gallery.innerHTML = '<div class="empty-msg">Loading content...</div>';
-      
-      let results = [];
-      let apiUrl = '';
-
-      try {
-        if (!TMDB_KEY || TMDB_KEY === 'YOUR_TMDB_API_KEY' || TMDB_KEY.length !== 32) { // Basic check for key format
-            console.error("TMDB_KEY is not set or is a placeholder/invalid format.");
-            gallery.innerHTML = '<div class="empty-msg">TMDB API Key is missing or invalid. Please check your `TMDB_KEY` constant.</div>';
-            return;
-        }
-
-        if (q) {
-          if (mediaTypeFilter === 'movie') {
-            apiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
-          } else if (mediaTypeFilter === 'tv') {
-            apiUrl = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
-          } else { // 'all'
-            apiUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
-          }
-        } else {
-          // Trending
-          if (mediaTypeFilter === 'movie') {
-            apiUrl = `https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_KEY}`;
-          } else if (mediaTypeFilter === 'tv') {
-            apiUrl = `https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_KEY}`;
-          } else { // 'all'
-            apiUrl = `https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_KEY}`;
-          }
-        }
-
-        const res = await fetch(apiUrl);
-        if (!res.ok) {
-            console.error('TMDB API response not OK:', res.status, res.statusText);
-            const errorText = await res.text(); 
-            console.error('TMDB API Error Body:', errorText);
-            let userMessage = `Error fetching data from TMDB. Status: ${res.status}.`;
-            if (res.status === 401) {
-              userMessage += " This usually means your TMDB_KEY is invalid or expired. Check it in the console.";
-            } else if (res.status === 404) {
-              userMessage += " The API endpoint might be incorrect.";
-            } else if (res.status === 429) {
-              userMessage += " You are sending too many requests to TMDB. Try again later.";
-            }
-            gallery.innerHTML = `<div class="empty-msg">${userMessage}</div>`;
-            return;
-        }
-
-        const data = await res.json();
-
-        results = data.results.filter(i => i.media_type !== 'person'); 
-        
-        if (q && mediaTypeFilter !== 'all') {
-          results = results.filter(item => item.media_type === mediaTypeFilter);
-        }
-        
-        if (results.length === 0) {
-            gallery.innerHTML = '<div class="empty-msg">No results found for your query.</div>';
-            return;
-        }
-
-        gallery.innerHTML = ''; // Clear loading message for actual results
-        results.forEach(item => {
-          const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date); 
-          const name = item.name || item.title;
-          const year = (item.first_air_date || item.release_date || '').split('-')[0];
-          const img = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
-          
-          const card = document.createElement('div');
-          card.className = 'movie-card';
-
-          let actionHtml = '';
-          if (isTV) {
-            const isTracked = localSubs.includes(item.id.toString());
-            actionHtml = isTracked 
-              ? `<button class="btn-subscribe active" disabled>Tracked ✓</button>`
-              : `<button class="btn-subscribe" onclick="subscribe('${item.id}', '${name.replace(/'/g, "\\'")}', this)">Track Episodes</button>`;
-          }
-
-          card.innerHTML = `
-            <div class="poster-wrap"><img src="${img}" loading="lazy" alt="${name} poster"></div>
-            <div class="card-content">
-              <div class="card-title">${name}</div>
-              <div class="card-meta">${isTV ? 'TV Series' : 'Movie'} • ${year || 'TBA'}</div>
-              ${actionHtml}
-            </div>
-          `;
-          gallery.appendChild(card);
-        });
-      } catch (e) { 
-        console.error("Search error:", e);
-        gallery.innerHTML = `<div class="empty-msg">An unexpected error occurred during search: ${e.message}. Please check your browser console for more details.</div>`; 
-      }
+    function setMediaType(type) {
+      currentMediaType = type;
+      document.getElementById('toggleMovie').classList.toggle('active', type === 'movie');
+      document.getElementById('toggleTv').classList.toggle('active', type === 'tv');
+      performSearch();
     }
 
     function urlB64ToUint8Array(base64String) {
@@ -718,31 +236,186 @@ Error: " + e.message);
       const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
       const rawData = window.atob(base64);
       const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
       return outputArray;
     }
 
-    async function init() {
-      // No genre select element in the current UI, so no need to load genres.
-      performSearch(); // Initial load of trending content
-      loadDashboard();
+    function getSubscribedShows() {
+      const subs = localStorage.getItem('subscribedShows');
+      return subs ? JSON.parse(subs) : [];
     }
 
-    // Attach event listener for "Enter" key on search input and initialize the app
-    document.addEventListener('DOMContentLoaded', () => {
-      const searchInput = document.getElementById('searchInput');
-      if (searchInput) {
-        searchInput.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent default form submission behavior
-            performSearch();
-          }
-        });
-      } else {
-        console.warn("Search input element not found. 'Enter' key search functionality disabled.");
+    function markShowAsSubscribedLocally(showId) {
+      const subs = getSubscribedShows();
+      if (!subs.includes(showId.toString())) {
+        subs.push(showId.toString());
+        localStorage.setItem('subscribedShows', JSON.stringify(subs));
       }
-      init(); 
-    });
+    }
+
+    function unmarkShowLocally(showId) {
+      let subs = getSubscribedShows();
+      subs = subs.filter(id => id !== showId.toString());
+      localStorage.setItem('subscribedShows', JSON.stringify(subs));
+    }
+
+    async function subscribeToAlerts(showId, showName, btnElement) {
+      if (!swRegistration) return alert('Push not supported.');
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        btnElement.disabled = true;
+        btnElement.textContent = '...';
+
+        const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
+        const subscription = await swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey
+        });
+
+        const PushSubClass = Parse.Object.extend("PushSubscription");
+        const newSub = new PushSubClass();
+        newSub.set("subscriptionObject", JSON.parse(JSON.stringify(subscription)));
+        newSub.set("showId", showId.toString());
+        newSub.set("showName", showName);
+        await newSub.save();
+        
+        markShowAsSubscribedLocally(showId);
+        btnElement.textContent = 'Subscribed ✓';
+        btnElement.classList.add('subscribed');
+        loadRecentSubscriptions();
+      } catch (err) {
+        btnElement.disabled = false;
+        btnElement.textContent = 'Subscribe';
+      }
+    }
+
+    async function removeSubscription(showId) {
+      if(!confirm("Unsubscribe from this show?")) return;
+      try {
+        await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: showId.toString() });
+        unmarkShowLocally(showId);
+        loadRecentSubscriptions();
+        performSearch(); // Refresh UI
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadRecentSubscriptions() {
+      const container = document.getElementById('recentContainer');
+      try {
+        const results = await Parse.Cloud.run('getRecentSubscriptions');
+        container.innerHTML = '';
+        if (results.length === 0) {
+          container.innerHTML = '<div class="message">No recent subscriptions.</div>';
+          return;
+        }
+        results.forEach(sub => {
+          const dateObj = new Date(sub.date);
+          const formattedDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}/${dateObj.getFullYear()}`;
+          
+          const card = document.createElement('div');
+          card.className = 'recent-card glossy';
+          card.innerHTML = `
+            <div class="info">
+              <span class="name">${sub.showName}</span>
+              <span class="date">Subscribed: ${formattedDate}</span>
+            </div>
+            <button class="delete-btn" onclick="removeSubscription('${sub.showId}')" title="Delete">
+              <svg class="icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        container.innerHTML = '';
+      }
+    }
+
+    async function populateGenres() {
+      const res = await fetch(`https://api.themoviedb.org/3/genre/${currentMediaType}/list?api_key=${TMDB_KEY}`);
+      const data = await res.json();
+      const genreSelect = document.getElementById('genreSelect');
+      genreSelect.innerHTML = '<option value="">All Genres</option>';
+      data.genres.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name;
+        genreSelect.appendChild(opt);
+      });
+    }
+
+    async function performSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      const genre = document.getElementById('genreSelect').value;
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '<div class="message">Searching...</div>';
+
+      try {
+        let url;
+        if (query) {
+          // Fixed search: TMDB search/multi doesn't filter well, so we use specific type search
+          url = `https://api.themoviedb.org/3/search/${currentMediaType}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`;
+        } else {
+          url = `https://api.themoviedb.org/3/discover/${currentMediaType}?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
+          if (genre) url += `&with_genres=${genre}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        renderGallery(data.results || []);
+      } catch (err) {
+        gallery.innerHTML = '<div class="message">Error loading content.</div>';
+      }
+    }
+
+    function renderGallery(results) {
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+      const localSubs = getSubscribedShows();
+
+      if (results.length === 0) {
+        gallery.innerHTML = '<div class="message">No matches found.</div>';
+        return;
+      }
+
+      results.forEach(item => {
+        const title = item.title || item.name;
+        const date = item.release_date || item.first_air_date || '';
+        const img = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster';
+        const isSubscribed = localSubs.includes(item.id.toString());
+
+        const card = document.createElement('div');
+        card.className = 'card glossy';
+        card.innerHTML = `
+          <img src="${img}" alt="${title}" loading="lazy" />
+          <div class="card-info">
+            <div class="card-title">${title}</div>
+            <div class="card-meta">${currentMediaType.toUpperCase()} • ${date.split('-')[0] || 'N/A'}</div>
+            <button class="subscribe-btn ${isSubscribed ? 'subscribed' : ''}" 
+              onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}', this)" 
+              ${isSubscribed ? 'disabled' : ''}>
+              ${isSubscribed ? 'Subscribed ✓' : 'Subscribe Alerts'}
+            </button>
+          </div>
+        `;
+        gallery.appendChild(card);
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('keypress', e => { if(e.key === 'Enter') performSearch(); });
+
+    window.onload = () => {
+      populateGenres();
+      performSearch();
+      loadRecentSubscriptions();
+    };
   </script>
 </body>
 </html>
