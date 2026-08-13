@@ -64,12 +64,20 @@
     /* Search Bar UI */
     .search-group {
       display: flex;
+      flex-direction: column; /* Stack input and toggle on small screens */
+      gap: 10px;
       background: #1c1c21;
       border-radius: 12px;
       padding: 5px;
       border: 1px solid #27272a;
       flex-grow: 1;
-      max-width: 600px;
+      max-width: 420px; /* Approximately 70% smaller than 600px */
+    }
+
+    .search-input-area {
+      display: flex;
+      gap: 5px;
+      flex-grow: 1;
     }
 
     .search-group input {
@@ -92,6 +100,36 @@
       cursor: pointer;
     }
 
+    /* TV/Movies Toggle */
+    .media-type-toggle {
+      display: flex;
+      background: #27272a;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0; /* Prevent it from shrinking */
+    }
+
+    .media-type-toggle input[type="radio"] {
+      display: none;
+    }
+
+    .media-type-toggle label {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--text-dim);
+      transition: background-color 0.2s, color 0.2s;
+      flex: 1;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .media-type-toggle input[type="radio"]:checked + label {
+      background-color: var(--accent);
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
     .btn-primary {
       background: var(--accent);
       color: white;
@@ -101,6 +139,7 @@
       font-weight: 600;
       cursor: pointer;
       transition: 0.2s;
+      flex-shrink: 0;
     }
 
     .btn-primary:hover { background: var(--accent-hover); }
@@ -122,30 +161,30 @@
       flex-grow: 1;
     }
 
-    /* Tracked Cards Dashboard */
+    /* Tracked Cards Dashboard - Compact */
     .tracked-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+      gap: 15px; /* Reduced gap */
     }
 
     .tracked-card {
       background: var(--card-bg);
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 12px; /* Slightly smaller radius */
+      padding: 15px; /* Reduced padding */
       border: 1px solid #27272a;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px; /* Reduced gap */
       position: relative;
     }
 
-    .tracked-card .title { font-weight: 600; font-size: 1.1rem; color: #fff; padding-right: 30px; }
+    .tracked-card .title { font-weight: 600; font-size: 1rem; color: #fff; padding-right: 25px; margin-bottom: 2px; } /* Reduced font size and padding */
     
     .status-badge {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 20px;
+      font-size: 0.7rem; /* Smaller font size */
+      padding: 3px 8px; /* Reduced padding */
+      border-radius: 16px; /* Smaller radius */
       background: #27272a;
       color: var(--text-dim);
       width: fit-content;
@@ -154,30 +193,32 @@
     .episode-info {
       background: #1c1c21;
       border-radius: 8px;
-      padding: 10px;
-      font-size: 0.85rem;
+      padding: 8px; /* Reduced padding */
+      font-size: 0.8rem; /* Smaller font size */
     }
 
-    .episode-info div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .episode-info div { display: flex; justify-content: space-between; margin-bottom: 3px; } /* Reduced margin */
+    .episode-info div:last-child { margin-bottom: 0; } /* No margin on last item */
     .episode-info span { color: var(--text-dim); }
     .episode-info b { color: var(--accent); }
 
     .btn-delete {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 10px; /* Adjusted position */
+      right: 10px; /* Adjusted position */
       background: rgba(239, 68, 68, 0.1);
       border: none;
       color: var(--danger);
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 28px; /* Smaller button */
+      height: 28px; /* Smaller button */
+      border-radius: 6px; /* Smaller radius */
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
       transition: 0.2s;
+      font-size: 1rem;
     }
 
     .btn-delete:hover { background: var(--danger); color: white; }
@@ -224,8 +265,27 @@
     /* Empty States */
     .empty-msg { text-align: center; color: var(--text-dim); padding: 40px; grid-column: 1/-1; }
 
+    /* Mobile Compatibility */
     @media (max-width: 768px) {
       .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      header .nav-flex { flex-direction: column; align-items: stretch; }
+      .search-group { max-width: 100%; width: 100%; }
+      .search-input-area { flex-wrap: wrap; } /* Allow input and select to wrap */
+      .search-group input { flex-grow: 1; min-width: 120px; } /* Ensure input is not too small */
+      .search-group select { flex-shrink: 0; }
+      .btn-primary { width: 100%; }
+      .media-type-toggle { margin-top: 10px; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.4rem; }
+      .search-group { padding: 8px; }
+      .search-group input { padding: 8px 10px; }
+      .media-type-toggle { flex-wrap: wrap; }
+      .media-type-toggle label { flex: 1 1 auto; min-width: unset; }
+      .tracked-card { padding: 12px; }
+      .tracked-card .title { font-size: 0.9rem; }
+      .episode-info { font-size: 0.75rem; padding: 6px; }
     }
   </style>
 </head>
@@ -235,9 +295,19 @@
     <div class="container nav-flex">
       <h1>Cinema<span>Dash</span></h1>
       <div class="search-group">
-        <input type="text" id="searchInput" placeholder="Search for a show or movie..." />
-        <select id="genreSelect"><option value="">All Genres</option></select>
-        <button class="btn-primary" onclick="performSearch()">Search</button>
+        <div class="search-input-area">
+          <input type="text" id="searchInput" placeholder="Search for a show or movie..." />
+          <select id="genreSelect"><option value="">All Genres</option></select>
+          <button class="btn-primary" onclick="performSearch()">Search</button>
+        </div>
+        <div class="media-type-toggle">
+          <input type="radio" id="toggleAll" name="mediaType" value="all" checked onchange="performSearch()">
+          <label for="toggleAll">All</label>
+          <input type="radio" id="toggleMovies" name="mediaType" value="movie" onchange="performSearch()">
+          <label for="toggleMovies">Movies</label>
+          <input type="radio" id="toggleTV" name="mediaType" value="tv" onchange="performSearch()">
+          <label for="toggleTV">TV Shows</label>
+        </div>
       </div>
     </div>
   </header>
@@ -281,6 +351,22 @@
       localStorage.setItem('my_subs', JSON.stringify(s));
     };
 
+    // Helper to format date to M/D/YYYY
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      try {
+        const date = new Date(dateString + 'T00:00:00'); // Add T00:00:00 to ensure UTC interpretation and avoid timezone issues
+        // Use toLocaleDateString for more robust formatting, but manually construct for specific format
+        const month = date.getUTCMonth() + 1; // getUTCMonth() is 0-indexed
+        const day = date.getUTCDate();
+        const year = date.getUTCFullYear();
+        return `${month}/${day}/${year}`;
+      } catch (e) {
+        console.error("Error formatting date:", dateString, e);
+        return 'N/A';
+      }
+    };
+
     /**
      * LOAD DASHBOARD DATA
      * Fetches details from TMDB for each unique subscription
@@ -307,16 +393,16 @@
           const card = document.createElement('div');
           card.className = 'tracked-card';
           
-          const lastEp = details.last_episode_to_air ? details.last_episode_to_air.air_date : 'N/A';
-          const nextEp = details.next_episode_to_air ? details.next_episode_to_air.air_date : 'TBA';
+          const lastEpDate = details.last_episode_to_air ? formatDate(details.last_episode_to_air.air_date) : 'N/A';
+          const nextEpDate = details.next_episode_to_air ? formatDate(details.next_episode_to_air.air_date) : 'TBA';
           
           card.innerHTML = `
             <button class="btn-delete" onclick="unsubscribe('${show.showId}')" title="Unsubscribe">×</button>
             <div class="status-badge">Alerts Enabled</div>
             <div class="title">${show.showName}</div>
             <div class="episode-info">
-              <div><span>Last Aired:</span> <b>${lastEp}</b></div>
-              <div><span>Next Episode:</span> <b>${nextEp}</b></div>
+              <div><span>Last Aired:</span> <b>${lastEpDate}</b></div>
+              <div><span>Next Episode:</span> <b>${nextEpDate}</b></div>
             </div>
           `;
           grid.appendChild(card);
@@ -325,10 +411,10 @@
     }
 
     async function subscribe(id, name, btn) {
-      if (!swReg) return alert("Push not supported.");
+      if (!swReg) return alert("Push not supported or service worker not registered.");
       try {
         const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
+        if (permission !== 'granted') return alert("Notification permission denied. Cannot track shows.");
 
         btn.disabled = true;
         btn.textContent = "Syncing...";
@@ -350,45 +436,95 @@
         btn.classList.add('active');
         loadDashboard();
       } catch (e) { 
-        console.error(e);
+        console.error("Subscription error:", e);
+        alert("Failed to subscribe. Make sure you have allowed notifications and your service worker is correctly configured.");
         btn.disabled = false;
-        btn.textContent = "Try Again";
+        btn.textContent = "Track Episodes"; // Reset button text on error
       }
     }
 
     async function unsubscribe(showId) {
       if(!confirm("Stop alerts for this show?")) return;
       try {
-        await Parse.Cloud.run('deleteSubscription', { showId });
+        // Find the active push subscription object to remove it from the browser
+        let browserSubscription = null;
+        if (swReg && swReg.pushManager) {
+          browserSubscription = await swReg.pushManager.getSubscription();
+        }
+
+        // Send a request to your Parse Server to delete the subscription by showId
+        await Parse.Cloud.run('deleteSubscription', { showId: showId, endpoint: browserSubscription ? browserSubscription.endpoint : null });
+        
+        // Remove from local storage
         removeLocalSub(showId);
+        
+        // Refresh UI
         loadDashboard();
         performSearch(); // Refresh gallery buttons
-      } catch (e) { alert("Failed to delete."); }
+        
+        // Unsubscribe from the browser if it was a general subscription
+        if (browserSubscription) {
+          await browserSubscription.unsubscribe();
+        }
+
+      } catch (e) { 
+        console.error("Unsubscribe error:", e);
+        alert("Failed to delete subscription. It might have already been removed or an error occurred."); 
+      }
     }
 
     // Standard TMDB Logic
     async function performSearch() {
       const q = document.getElementById('searchInput').value.trim();
-      const g = document.getElementById('genreSelect').value;
+      const g = document.getElementById('genreSelect').value; // Currently not used in API calls
+      const mediaTypeFilter = document.querySelector('input[name="mediaType"]:checked').value;
+      
       const gallery = document.getElementById('gallery');
       const localSubs = getLocalSubs();
       
       gallery.innerHTML = '<div class="empty-msg">Searching content...</div>';
       
       let results = [];
+      let apiUrl = '';
+
       try {
         if (q) {
-          const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`);
-          const data = await res.json();
-          results = data.results.filter(i => i.media_type !== 'person');
+          // Search specific media type or multi-search
+          if (mediaTypeFilter === 'movie') {
+            apiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
+          } else if (mediaTypeFilter === 'tv') {
+            apiUrl = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
+          } else { // 'all' or default
+            apiUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
+          }
         } else {
-          const res = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_KEY}`);
-          const data = await res.json();
-          results = data.results;
+          // Trending specific media type or all
+          if (mediaTypeFilter === 'movie') {
+            apiUrl = `https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_KEY}`;
+          } else if (mediaTypeFilter === 'tv') {
+            apiUrl = `https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_KEY}`;
+          } else { // 'all' or default
+            apiUrl = `https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_KEY}`;
+          }
+        }
+
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        results = data.results.filter(i => i.media_type !== 'person'); // Filter out people from results
+        
+        // If a specific media type filter is applied, also filter out other types if multi-search was used
+        if (q && mediaTypeFilter !== 'all') {
+          results = results.filter(item => item.media_type === mediaTypeFilter);
+        }
+
+        if (results.length === 0) {
+            gallery.innerHTML = '<div class="empty-msg">No results found.</div>';
+            return;
         }
 
         gallery.innerHTML = '';
         results.forEach(item => {
+          // Determine if it's a TV show, prioritizing 'tv' media_type, or if it has first_air_date
           const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date);
           const name = item.name || item.title;
           const date = (item.first_air_date || item.release_date || '').split('-')[0];
@@ -398,6 +534,7 @@
           card.className = 'movie-card';
 
           let actionHtml = '';
+          // Only show 'Track Episodes' button for TV series
           if (isTV) {
             const isTracked = localSubs.includes(item.id.toString());
             actionHtml = isTracked 
@@ -415,7 +552,10 @@
           `;
           gallery.appendChild(card);
         });
-      } catch (e) { gallery.innerHTML = '<div class="empty-msg">Failed to load content.</div>'; }
+      } catch (e) { 
+        console.error("Search error:", e);
+        gallery.innerHTML = '<div class="empty-msg">Failed to load content. Please try again later.</div>'; 
+      }
     }
 
     function urlB64ToUint8Array(base64String) {
@@ -428,8 +568,8 @@
     }
 
     async function init() {
-      // Load Genres
-      const res = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_KEY}`);
+      // Load Genres (optional, as it's not currently filtering by genre in search)
+      const res = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_KEY}`); // Fetch TV genres
       const data = await res.json();
       const sel = document.getElementById('genreSelect');
       data.genres.forEach(gen => {
