@@ -1,177 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-
-      <link rel="manifest" href="./manifest.json" />
+     <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#0d1117" />
   <link rel="icon" href="./icon-512.png" type="image/png" />
 
     
-    <title>Movie & TV Gallery</title>
-    <style>
-        :root {
-            --primary-color: #ffffff;
-            --background-color: #1a1a1a;
-            --glass-background: rgba(255, 255, 255, 0.1);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.2);
-            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-        body { background-color: var(--background-color); color: var(--primary-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-        .header { width: 95%; padding: 20px; text-align: center; position: sticky; top: 0; background: var(--glass-background); backdrop-filter: blur(10px); border-bottom: var(--glass-border); z-index: 10; border-radius: 0 0 15px 15px; }
-        .search-container { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        .search-container input, .search-container select { padding: 10px; border-radius: 8px; border: 1px solid var(--primary-color); background: transparent; color: var(--primary-color); }
-        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 20px; width: 95%; }
-        .gallery-item { background: var(--glass-background); border-radius: 15px; overflow: hidden; border: var(--glass-border); backdrop-filter: blur(5px); box-shadow: var(--shadow); transition: transform 0.3s ease; position: relative; }
-        .gallery-item:hover { transform: scale(1.05); }
-        .gallery-item img { width: 100%; height: auto; display: block; }
-        .gallery-item .info { padding: 15px; }
-        .subscribe-btn { padding: 10px 20px; border-radius: 8px; border: none; background-color: #007bff; color: white; cursor: pointer; }
-        .item-subscribe-icon { position: absolute; top: 10px; right: 10px; cursor: pointer; width: 32px; height: 32px; background-color: rgba(0,0,0,0.5); border-radius: 50%; padding: 4px; transition: transform 0.2s ease; }
-        .item-subscribe-icon:hover { transform: scale(1.2); }
-        .item-subscribe-icon svg { stroke: white; }
-    </style>
+  <title>Movie & TV Glass Gallery</title>
+  
+  <!-- Parse SDK -->
+  <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+
+  <style>
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-blur: blur(12px);
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1f1c2c, #928dab);
+      background-attachment: fixed;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    /* Glassmorphism Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 15px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input, select, button {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      outline: none;
+      backdrop-filter: var(--glass-blur);
+    }
+
+    input::placeholder { color: #ddd; }
+    
+    option { background: #2c293c; color: #fff; }
+
+    button {
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: bold;
+    }
+
+    button:hover { background: rgba(255, 255, 255, 0.3); }
+
+    /* Gallery Grid */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .card:hover { transform: translateY(-5px); }
+
+    .card img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      background: #333;
+    }
+
+    .card-info {
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .card-type {
+      font-size: 0.8rem;
+      color: #ddd;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .subscribe-btn {
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+      border: none;
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(0,114,255,0.4);
+    }
+
+    .subscribe-btn:hover { background: linear-gradient(135deg, #0072ff, #00c6ff); }
+  </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Movie & TV Hub</h1>
-        <div class="search-container">
-            <input type="text" id="search" placeholder="Search for movies or TV shows...">
-            <select id="genre"><option value="">All Genres</option></select>
-            <select id="year"><option value="">All Years</option></select>
-            <button class="subscribe-btn" id="enableNotificationsBtn">Enable Notifications</button>
-        </div>
+  <header>
+    <h1>GlassGallery</h1>
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search movies & TV..." />
+      <select id="genreSelect">
+        <option value="">All Genres</option>
+        <option value="28">Action</option>
+        <option value="35">Comedy</option>
+        <option value="18">Drama</option>
+        <option value="10765">Sci-Fi & Fantasy</option>
+      </select>
+      <select id="yearSelect">
+        <option value="">Any Year</option>
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+        <option value="2023">2023</option>
+      </select>
+      <button onclick="performSearch()">Search</button>
     </div>
+  </header>
 
-    <div id="gallery"></div>
+  <div class="gallery" id="gallery"></div>
 
-    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
-    <script>
-        Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
-        Parse.serverURL = 'https://parseapi.back4app.com/';
+  <script>
+    // Configuration Keys
+    const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
+    const PARSE_JS_KEY = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp';
+    const TMDB_KEY = '1070730380f5fee0d87cf0382670b255';
+    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8';
 
-        const apiKey = '1070730380f5fee0d87cf0382670b255';
-        const VAPID_PUBLIC_KEY = "BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8";
-        
-        const gallery = document.getElementById('gallery');
-        const searchInput = document.getElementById('search');
-        const genreFilter = document.getElementById('genre');
-        const yearFilter = document.getElementById('year');
-        const enableNotificationsBtn = document.getElementById('enableNotificationsBtn');
+    // Initialize Parse
+    Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
+    Parse.serverURL = 'https://parseapi.back4app.com/';
 
-        async function fetchAndDisplay() {
-            const searchTerm = searchInput.value;
-            let url = `https://api.themoviedb.org/3/trending/all/day?api_key=${apiKey}`;
-            if (searchTerm) {
-                url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${searchTerm}`;
-            }
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                display(data.results);
-            } catch (error) { console.error('Error fetching data:', error); }
-        }
+    // Service Worker Registration for PWA Push
+    let swRegistration = null;
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('sw.js')
+      .then(swReg => { swRegistration = swReg; })
+      .catch(error => { console.error('Service Worker Error', error); });
+    }
 
-        function display(items) {
-            gallery.innerHTML = '';
-            items.forEach(item => {
-                if (item.poster_path) {
-                    const itemElement = document.createElement('div');
-                    itemElement.classList.add('gallery-item');
-                    
-                    // Show subscribe icon only for TV shows
-                    const subscribeIconHtml = item.media_type === 'tv' ? `
-                        <div class="item-subscribe-icon" data-tmdb-id="${item.id}" title="Subscribe to new episode alerts">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                            </svg>
-                        </div>
-                    ` : '';
+    // Utility: Convert VAPID key to Uint8Array
+    function urlB64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
 
-                    itemElement.innerHTML = `
-                        ${subscribeIconHtml}
-                        <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${item.title || item.name}">
-                        <div class="info">
-                            <h3>${item.title || item.name}</h3>
-                        </div>
-                    `;
-                    gallery.appendChild(itemElement);
-                }
-            });
-        }
-        
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-            return outputArray;
-        }
+    // Subscribe to TV Show Alerts
+    async function subscribeToAlerts(showId, showName) {
+      if (!swRegistration) return alert('Service worker not registered.');
 
-        async function registerDeviceForPush() {
-            try {
-                await navigator.serviceWorker.register('/service-worker.js');
-                const registration = await navigator.serviceWorker.ready;
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return alert('Notifications denied.');
 
-                await Parse.Cloud.run("subscribe", { subscription });
-                alert('Notifications enabled! You can now subscribe to shows.');
-                enableNotificationsBtn.style.display = 'none'; // Hide button after success
-            } catch (error) {
-                console.error('Failed to enable notifications: ', error);
-                alert('Failed to enable notifications.');
-            }
-        }
-
-        async function subscribeToTvShow(tmdbId) {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-
-            if (!subscription) {
-                alert("Please enable notifications first using the button at the top.");
-                return;
-            }
-
-            try {
-                const result = await Parse.Cloud.run("subscribeToItem", { 
-                    subscriptionEndpoint: subscription.endpoint,
-                    tmdbId: parseInt(tmdbId, 10) 
-                });
-                alert(result);
-            } catch (error) {
-                console.error("Failed to subscribe to item:", error);
-                alert(`Error: ${error.message}`);
-            }
-        }
-
-        enableNotificationsBtn.addEventListener('click', () => {
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        registerDeviceForPush();
-                    }
-                });
-            } else { alert('Push notifications are not supported by your browser.'); }
+        const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
+        const subscription = await swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey
         });
 
-        gallery.addEventListener('click', (event) => {
-            const iconContainer = event.target.closest('.item-subscribe-icon');
-            if (iconContainer) {
-                const tmdbId = iconContainer.dataset.tmdbId;
-                subscribeToTvShow(tmdbId);
-            }
-        });
+        // Save to Parse Backend (Triggers 'PushSubscription' Cloud Code)
+        const PushSubClass = Parse.Object.extend("PushSubscription");
+        const newSub = new PushSubClass();
+        newSub.set("subscriptionObject", JSON.parse(JSON.stringify(subscription)));
+        newSub.set("showId", showId.toString());
+        newSub.set("showName", showName);
+        
+        await newSub.save();
+        alert(`Successfully subscribed to alerts for ${showName}!`);
+      } catch (err) {
+        console.error('Subscription error:', err);
+        alert('Failed to subscribe.');
+      }
+    }
 
-        // Initializations
-        searchInput.addEventListener('input', fetchAndDisplay);
-        fetchAndDisplay();
-    </script>
+    // Render Gallery UI
+    function renderGallery(results) {
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+
+      results.forEach(item => {
+        const title = item.title || item.name;
+        const type = item.media_type === 'movie' ? 'Movie' : 'TV Show';
+        const imgPath = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        let subButtonHTML = '';
+        // Only allow subscription for TV Shows
+        if (item.media_type === 'tv' || !item.media_type) {
+          subButtonHTML = `<button class="subscribe-btn" onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}')">Subscribe Alerts</button>`;
+        }
+
+        card.innerHTML = `
+          <img src="${imgPath}" alt="${title}" loading="lazy"/>
+          <div class="card-info">
+            <div>
+              <div class="card-title">${title}</div>
+              <div class="card-type">${type} | ${item.release_date || item.first_air_date || 'N/A'}</div>
+            </div>
+            ${subButtonHTML}
+          </div>
+        `;
+        gallery.appendChild(card);
+      });
+    }
+
+    // TMDB API Fetch Logic
+    async function performSearch() {
+      const query = document.getElementById('searchInput').value;
+      const genre = document.getElementById('genreSelect').value;
+      const year = document.getElementById('yearSelect').value;
+      
+      let url = '';
+
+      if (query) {
+        url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&include_adult=false`;
+      } else {
+        // Fallback to discover if no direct text query
+        let params = `api_key=${TMDB_KEY}&sort_by=popularity.desc`;
+        if (genre) params += `&with_genres=${genre}`;
+        if (year) params += `&first_air_date_year=${year}&primary_release_year=${year}`;
+        url = `https://api.themoviedb.org/3/discover/tv?${params}`;
+      }
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        // Filter out people from multi-search
+        const filtered = data.results.filter(r => r.media_type !== 'person');
+        renderGallery(filtered);
+      } catch (err) {
+        console.error('TMDB Error', err);
+      }
+    }
+
+    // Initial Load
+    window.onload = () => performSearch();
+  </script>
 </body>
 </html>
