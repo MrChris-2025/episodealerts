@@ -1,25 +1,11 @@
 self.addEventListener('push', function(event) {
-  let data = { title: 'New Alert', body: 'New content is available!' };
-  
-  if (event.data) {
-    data = event.data.json();
-  }
-
-  const options = {
-    body: data.body,
-    icon: 'https://via.placeholder.com/128/09f/fff.png',
-    badge: 'https://via.placeholder.com/128/09f/fff.png',
-    vibrate: [200, 100, 200]
-  };
-
+  const data = event.data ? event.data.json() : { title: 'Alert', body: 'New Episode!' };
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-512.png',
+      vibrate: [200, 100, 200]
+    })
   );
 });
-
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  event.waitUntil(
-    clients.openWindow('/')
-  );
-});
+self.addEventListener('notificationclick', e => { e.notification.close(); e.waitUntil(clients.openWindow('/')); });
