@@ -3,12 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-     <link rel="manifest" href="./manifest.json" />
-  <meta name="theme-color" content="#0d1117" />
-  <link rel="icon" href="./icon-512.png" type="image/png" />
-
-    
   <title>Movie & TV Glass Gallery</title>
   
   <!-- Parse SDK -->
@@ -143,9 +137,19 @@
       border-radius: 8px;
       margin-top: 10px;
       box-shadow: 0 4px 15px rgba(0,114,255,0.4);
+      color: white;
     }
 
     .subscribe-btn:hover { background: linear-gradient(135deg, #0072ff, #00c6ff); }
+
+    /* Messages */
+    .message {
+      text-align: center;
+      padding: 40px;
+      font-size: 1.2rem;
+      color: #ddd;
+      grid-column: 1 / -1;
+    }
   </style>
 </head>
 <body>
@@ -156,23 +160,17 @@
       <input type="text" id="searchInput" placeholder="Search movies & TV..." />
       <select id="genreSelect">
         <option value="">All Genres</option>
-        <option value="28">Action</option>
-        <option value="35">Comedy</option>
-        <option value="18">Drama</option>
-        <option value="10765">Sci-Fi & Fantasy</option>
       </select>
       <select id="yearSelect">
         <option value="">Any Year</option>
-        <option value="2026">2026</option>
-        <option value="2025">2025</option>
-        <option value="2024">2024</option>
-        <option value="2023">2023</option>
       </select>
       <button onclick="performSearch()">Search</button>
     </div>
   </header>
 
-  <div class="gallery" id="gallery"></div>
+  <div class="gallery" id="gallery">
+    <div class="message">Loading content...</div>
+  </div>
 
   <script>
     // Configuration Keys
@@ -219,7 +217,7 @@
           applicationServerKey: applicationServerKey
         });
 
-        // Save to Parse Backend (Triggers 'PushSubscription' Cloud Code)
+        // Save to Parse Backend
         const PushSubClass = Parse.Object.extend("PushSubscription");
         const newSub = new PushSubClass();
         newSub.set("subscriptionObject", JSON.parse(JSON.stringify(subscription)));
@@ -234,21 +232,68 @@
       }
     }
 
+    // Dynamic Population: Genres
+    async function populateGenres() {
+      try {
+        const [movieRes, tvRes] = await Promise.all([
+          fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_KEY}`),
+          fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_KEY}`)
+        ]);
+        const movieData = await movieRes.json();
+        const tvData = await tvRes.json();
+        
+        const genreMap = new Map();
+        if(movieData.genres) movieData.genres.forEach(g => genreMap.set(g.id, g.name));
+        if(tvData.genres) tvData.genres.forEach(g => genreMap.set(g.id, g.name));
+        
+        const genreSelect = document.getElementById('genreSelect');
+        const sortedGenres = Array.from(genreMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+        
+        sortedGenres.forEach(([id, name]) => {
+          const option = document.createElement('option');
+          option.value = id;
+          option.textContent = name;
+          genreSelect.appendChild(option);
+        });
+      } catch (err) {
+        console.error('Error fetching genres:', err);
+      }
+    }
+
+    // Dynamic Population: Years
+    function populateYears() {
+      const yearSelect = document.getElementById('yearSelect');
+      const currentYear = new Date().getFullYear();
+      
+      // Populate from 2 years in the future down to 1900
+      for (let i = currentYear + 2; i >= 1900; i--) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        yearSelect.appendChild(option);
+      }
+    }
+
     // Render Gallery UI
     function renderGallery(results) {
       const gallery = document.getElementById('gallery');
       gallery.innerHTML = '';
 
+      if (!results || results.length === 0) {
+        gallery.innerHTML = '<div class="message">No results found. Try adjusting your filters.</div>';
+        return;
+      }
+
       results.forEach(item => {
         const title = item.title || item.name;
         const type = item.media_type === 'movie' ? 'Movie' : 'TV Show';
         const imgPath = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
+        const releaseDate = item.release_date || item.first_air_date || 'N/A';
         
         const card = document.createElement('div');
         card.className = 'card';
 
         let subButtonHTML = '';
-        // Only allow subscription for TV Shows
         if (item.media_type === 'tv' || !item.media_type) {
           subButtonHTML = `<button class="subscribe-btn" onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}')">Subscribe Alerts</button>`;
         }
@@ -258,7 +303,7 @@
           <div class="card-info">
             <div>
               <div class="card-title">${title}</div>
-              <div class="card-type">${type} | ${item.release_date || item.first_air_date || 'N/A'}</div>
+              <div class="card-type">${type} | ${releaseDate}</div>
             </div>
             ${subButtonHTML}
           </div>
@@ -267,37 +312,84 @@
       });
     }
 
-    // TMDB API Fetch Logic
+    // Main Search Logic
     async function performSearch() {
-      const query = document.getElementById('searchInput').value;
+      const query = document.getElementById('searchInput').value.trim();
       const genre = document.getElementById('genreSelect').value;
       const year = document.getElementById('yearSelect').value;
+      const gallery = document.getElementById('gallery');
       
-      let url = '';
-
-      if (query) {
-        url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&include_adult=false`;
-      } else {
-        // Fallback to discover if no direct text query
-        let params = `api_key=${TMDB_KEY}&sort_by=popularity.desc`;
-        if (genre) params += `&with_genres=${genre}`;
-        if (year) params += `&first_air_date_year=${year}&primary_release_year=${year}`;
-        url = `https://api.themoviedb.org/3/discover/tv?${params}`;
-      }
+      gallery.innerHTML = '<div class="message">Searching...</div>';
+      let finalResults = [];
 
       try {
-        const response = await fetch(url);
-        const data = await response.json();
-        // Filter out people from multi-search
-        const filtered = data.results.filter(r => r.media_type !== 'person');
-        renderGallery(filtered);
+        if (query) {
+          // 1. Text Search (Includes Multi: Movies & TV)
+          const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&include_adult=false`;
+          const response = await fetch(url);
+          const data = await response.json();
+          
+          // Exclude actors/people
+          finalResults = (data.results || []).filter(r => r.media_type !== 'person');
+
+          // TMDB Multi-Search doesn't natively filter by genre/year in the API call, so we filter locally
+          if (genre) {
+            finalResults = finalResults.filter(item => item.genre_ids && item.genre_ids.includes(parseInt(genre)));
+          }
+          if (year) {
+            finalResults = finalResults.filter(item => {
+              const itemDate = item.release_date || item.first_air_date || '';
+              return itemDate.startsWith(year);
+            });
+          }
+
+        } else {
+          // 2. Discover Mode (No Text Query) - We pull both Movies and TV concurrently
+          let movieUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
+          let tvUrl = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
+          
+          if (genre) {
+            movieUrl += `&with_genres=${genre}`;
+            tvUrl += `&with_genres=${genre}`;
+          }
+          if (year) {
+            movieUrl += `&primary_release_year=${year}`;
+            tvUrl += `&first_air_date_year=${year}`;
+          }
+
+          const [movieRes, tvRes] = await Promise.all([ fetch(movieUrl), fetch(tvUrl) ]);
+          const movieData = await movieRes.json();
+          const tvData = await tvRes.json();
+
+          // Append correct media types for the UI
+          const movies = (movieData.results || []).map(m => ({ ...m, media_type: 'movie' }));
+          const tvShows = (tvData.results || []).map(t => ({ ...t, media_type: 'tv' }));
+
+          // Merge and sort by highest popularity first
+          finalResults = [...movies, ...tvShows].sort((a, b) => b.popularity - a.popularity);
+        }
+
+        renderGallery(finalResults);
+
       } catch (err) {
-        console.error('TMDB Error', err);
+        console.error('TMDB Search Error:', err);
+        gallery.innerHTML = '<div class="message">An error occurred while fetching data.</div>';
       }
     }
 
-    // Initial Load
-    window.onload = () => performSearch();
+    // Execute search when pressing "Enter" in the input field
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+
+    // Run Initialization on Load
+    window.onload = async () => {
+      populateYears();
+      await populateGenres();
+      performSearch();
+    };
   </script>
 </body>
 </html>
