@@ -3,436 +3,300 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0d1117" />
-  <link rel="icon" href="./icon-512.png" type="image/png" />
-  
   <title>Liquid Glass Gallery</title>
-  
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
-
   <style>
     :root {
-      --glass-bg: rgba(255, 255, 255, 0.08);
-      --glass-border: rgba(255, 255, 255, 0.15);
-      --glass-blur: blur(15px);
-      --liquid-gloss: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%);
+      --glass: rgba(255, 255, 255, 0.07);
+      --border: rgba(255, 255, 255, 0.15);
+      --blur: blur(20px);
+      --liquid: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.05) 100%);
     }
-    
+
     body {
       margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at top left, #232526, #414345);
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top, #1a1c2c, #0d0e14);
       background-attachment: fixed;
       color: #fff;
       min-height: 100vh;
     }
 
-    /* Liquid Gloss condensation effect */
+    /* Gloss Condensation Effect */
     .glossy {
       position: relative;
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
       overflow: hidden;
     }
 
-    .glossy::before {
+    .glossy::after {
       content: "";
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--liquid-gloss);
+      inset: 0;
+      background: var(--liquid);
       pointer-events: none;
-      z-index: 1;
     }
 
     header {
       position: sticky;
-      top: 0;
-      z-index: 100;
+      top: 0; z-index: 100;
       padding: 15px 30px;
       display: flex;
+      justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap;
       gap: 15px;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--border);
     }
 
-    .brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
+    .controls { display: flex; gap: 10px; align-items: center; }
 
-    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-    .toggle-container {
+    .toggle-box {
       display: flex;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.4);
       padding: 4px;
       border-radius: 12px;
-      border: 1px solid var(--glass-border);
+      border: 1px solid var(--border);
     }
-    .toggle-btn {
-      padding: 6px 16px;
+
+    .tgl {
+      padding: 8px 18px;
       border-radius: 8px;
       border: none;
       background: transparent;
-      color: #aaa;
+      color: #777;
       cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s;
-    }
-    .toggle-btn.active {
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-weight: 700;
+      transition: 0.3s;
     }
 
+    .tgl.active { background: rgba(255,255,255,0.1); color: #fff; }
+
     input, select {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
       color: #fff;
-      padding: 10px 12px;
+      padding: 10px;
       border-radius: 10px;
       outline: none;
     }
-    
-    select option { background: #333; }
 
-    .recent-section {
-      padding: 20px 30px;
-      max-width: 1300px;
-      margin: 0 auto;
-    }
-    .recent-scroll {
-      display: flex;
-      gap: 15px;
-      overflow-x: auto;
-      padding-bottom: 15px;
-      scrollbar-width: thin;
-    }
+    .recent-section { padding: 20px 30px; max-width: 1400px; margin: 0 auto; }
+    .recent-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; }
+
     .recent-card {
-      min-width: 280px;
+      min-width: 300px;
       padding: 15px;
-      border-radius: 16px;
+      border-radius: 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .recent-card .info .name { font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 4px; }
-    .recent-card .info .date { font-size: 0.75rem; color: #aaa; display: block; }
-    .recent-card .info .air-status { font-size: 0.7rem; color: #7de0ff; margin-top: 5px; font-weight: 500; }
 
-    .delete-btn {
-      background: rgba(255, 50, 50, 0.1);
-      border: 1px solid rgba(255, 50, 50, 0.2);
-      color: #ff8888;
+    .recent-info .name { font-weight: 700; display: block; margin-bottom: 4px; color: #00d4ff; }
+    .recent-info .sub-date { font-size: 0.75rem; color: #aaa; }
+    .recent-info .ep { font-size: 0.7rem; margin-top: 8px; color: #ddd; }
+
+    .del-btn {
+      background: rgba(255, 70, 70, 0.15);
+      border: 1px solid rgba(255,70,70,0.3);
+      color: #ff6b6b;
       padding: 8px;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      transition: 0.2s;
     }
-    .delete-btn:hover { background: rgba(255, 50, 50, 0.3); }
 
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 25px;
       padding: 30px;
-      max-width: 1300px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
-    .card {
-      border-radius: 20px;
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .card:hover { transform: scale(1.03); }
+    .card { border-radius: 20px; transition: 0.3s; }
+    .card:hover { transform: translateY(-5px); }
+    .card img { width: 100%; height: 320px; object-fit: cover; border-bottom: 1px solid var(--border); }
+    .card-body { padding: 15px; }
+    .card-title { font-weight: 700; margin-bottom: 10px; font-size: 1rem; }
 
-    .card img {
-      width: 100%;
-      height: 320px;
-      object-fit: cover;
-      border-bottom: 1px solid var(--glass-border);
-    }
-
-    .card-info { padding: 18px; }
-    .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; }
-    .card-meta { font-size: 0.8rem; color: #ccc; margin-bottom: 15px; }
-
-    .subscribe-btn {
+    .sub-btn {
       width: 100%;
       padding: 12px;
-      border-radius: 10px;
       border: none;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      color: white;
-      font-weight: 600;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0072ff, #00c6ff);
+      color: #fff;
+      font-weight: 700;
       cursor: pointer;
-      z-index: 2;
-      position: relative;
     }
-    .subscribe-btn.subscribed {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid var(--glass-border);
-      cursor: default;
-    }
+    .sub-btn.active { background: rgba(255,255,255,0.1); border: 1px solid var(--border); cursor: default; }
 
-    .message { text-align: center; padding: 50px; font-size: 1.2rem; grid-column: 1/-1; }
     .icon { width: 18px; height: 18px; fill: currentColor; }
   </style>
 </head>
 <body>
 
-  <header class="glossy">
-    <div class="brand">GLOSS</div>
-    <div class="controls">
-      <div class="toggle-container">
-        <button id="toggleMovie" class="toggle-btn" onclick="setMediaType('movie')">Movies</button>
-        <button id="toggleTv" class="toggle-btn active" onclick="setMediaType('tv')">TV Shows</button>
-      </div>
-      <input type="text" id="searchInput" placeholder="Search..." oninput="debounceSearch()" />
-      <select id="genreSelect" onchange="performSearch()">
-        <option value="">All Genres</option>
-      </select>
-      <select id="yearSelect" onchange="performSearch()">
-        <option value="">Any Year</option>
-      </select>
+<header class="glossy">
+  <div style="font-size: 1.5rem; font-weight: 900;">GLOSS</div>
+  <div class="controls">
+    <div class="toggle-box">
+      <button id="mBtn" class="tgl" onclick="setMode('movie')">MOVIES</button>
+      <button id="tBtn" class="tgl active" onclick="setMode('tv')">TV</button>
     </div>
-  </header>
-
-  <div class="recent-section">
-    <h3 style="margin-left: 10px;">Recent Subscriptions</h3>
-    <div class="recent-scroll" id="recentContainer">
-      <div class="message">Loading...</div>
-    </div>
+    <input type="text" id="q" placeholder="Instant Search..." oninput="dbnc()">
+    <select id="g" onchange="search()"><option value="">All Genres</option></select>
+    <select id="y" onchange="search()"><option value="">Any Year</option></select>
   </div>
+</header>
 
-  <div class="gallery" id="gallery">
-    <div class="message">Loading content...</div>
-  </div>
+<div class="recent-section">
+  <div class="recent-scroll" id="recents"></div>
+</div>
 
-  <script>
-    const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
-    const PARSE_JS_KEY = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp';
-    const TMDB_KEY = '1070730380f5fee0d87cf0382670b255';
-    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8';
+<div class="gallery" id="gal"></div>
 
-    Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
-    Parse.serverURL = 'https://parseapi.back4app.com/';
+<script>
+  const TMDB = '1070730380f5fee0d87cf0382670b255';
+  Parse.initialize('gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq', 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp');
+  Parse.serverURL = 'https://parseapi.back4app.com/';
 
-    let currentMediaType = 'tv';
-    let swRegistration = null;
-    let searchTimeout = null;
+  let mode = 'tv', timeout = null;
 
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; });
-    }
+  function setMode(m) {
+    mode = m;
+    document.getElementById('mBtn').classList.toggle('active', m === 'movie');
+    document.getElementById('tBtn').classList.toggle('active', m === 'tv');
+    loadGenres();
+    search();
+  }
 
-    // Date formatter for 8/13/2026 format
-    function formatDate(date) {
-      if (!date) return "N/A";
-      const d = new Date(date);
-      // Use UTC to ensure date consistency
-      return `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
-    }
+  function dbnc() { clearTimeout(timeout); timeout = setTimeout(search, 500); }
 
-    function setMediaType(type) {
-      currentMediaType = type;
-      document.getElementById('toggleMovie').classList.toggle('active', type === 'movie');
-      document.getElementById('toggleTv').classList.toggle('active', type === 'tv');
-      populateGenres(); // Refresh genres for new type
-      performSearch();
-    }
+  function fmt(d) {
+    if (!d) return 'N/A';
+    const date = new Date(d);
+    return `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`;
+  }
 
-    function debounceSearch() {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => performSearch(), 500);
-    }
+  async function loadGenres() {
+    const r = await fetch(`https://api.themoviedb.org/3/genre/${mode}/list?api_key=${TMDB}`);
+    const d = await r.json();
+    const sel = document.getElementById('g');
+    sel.innerHTML = '<option value="">All Genres</option>';
+    d.genres.forEach(g => { sel.innerHTML += `<option value="${g.id}">${g.name}</option>`; });
+  }
 
-    function populateYears() {
-      const yearSelect = document.getElementById('yearSelect');
-      const currentYear = new Date().getFullYear();
-      for (let i = currentYear + 2; i >= 1900; i--) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = i;
-        yearSelect.appendChild(opt);
-      }
-    }
+  async function search() {
+    const q = document.getElementById('q').value;
+    const g = document.getElementById('g').value;
+    const y = document.getElementById('y').value;
+    const container = document.getElementById('gal');
+    container.innerHTML = 'Loading...';
 
-    async function populateGenres() {
-      const res = await fetch(`https://api.themoviedb.org/3/genre/${currentMediaType}/list?api_key=${TMDB_KEY}`);
-      const data = await res.json();
-      const genreSelect = document.getElementById('genreSelect');
-      const currentVal = genreSelect.value;
-      genreSelect.innerHTML = '<option value="">All Genres</option>';
-      data.genres.forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.id;
-        opt.textContent = g.name;
-        genreSelect.appendChild(opt);
-      });
-      genreSelect.value = currentVal;
-    }
+    let url = q 
+      ? `https://api.themoviedb.org/3/search/${mode}?api_key=${TMDB}&query=${q}`
+      : `https://api.themoviedb.org/3/discover/${mode}?api_key=${TMDB}&sort_by=popularity.desc`;
+    
+    if (y) url += mode === 'movie' ? `&primary_release_year=${y}` : `&first_air_date_year=${y}`;
+    if (!q && g) url += `&with_genres=${g}`;
 
-    async function performSearch() {
-      const query = document.getElementById('searchInput').value.trim();
-      const genre = document.getElementById('genreSelect').value;
-      const year = document.getElementById('yearSelect').value;
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = '<div class="message">Searching...</div>';
+    const res = await fetch(url);
+    const data = await res.json();
+    let items = data.results || [];
+    if (q && g) items = items.filter(i => i.genre_ids.includes(parseInt(g)));
 
+    container.innerHTML = '';
+    const subs = JSON.parse(localStorage.getItem('subs') || '[]');
+
+    items.forEach(i => {
+      const isSub = subs.includes(i.id.toString());
+      const card = document.createElement('div');
+      card.className = 'card glossy';
+      card.innerHTML = `
+        <img src="https://image.tmdb.org/t/p/w500${i.poster_path}" alt="poster">
+        <div class="card-body">
+          <div class="card-title">${i.title || i.name}</div>
+          <button class="sub-btn ${isSub ? 'active' : ''}" onclick="subscribe('${i.id}', '${(i.title || i.name).replace(/'/g, "")}', this)" ${isSub ? 'disabled' : ''}>
+            ${isSub ? 'Subscribed ✓' : 'Subscribe Alerts'}
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  async function subscribe(id, name, btn) {
+    const sw = await navigator.serviceWorker.ready;
+    const s = await sw.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8'
+    });
+    const Obj = Parse.Object.extend("PushSubscription");
+    const sub = new Obj();
+    sub.set("subscriptionObject", JSON.parse(JSON.stringify(s)));
+    sub.set("showId", id.toString());
+    sub.set("showName", name);
+    await sub.save();
+    
+    let subs = JSON.parse(localStorage.getItem('subs') || '[]');
+    subs.push(id.toString());
+    localStorage.setItem('subs', JSON.stringify(subs));
+    btn.className = 'sub-btn active';
+    btn.textContent = 'Subscribed ✓';
+    loadRecents();
+  }
+
+  async function loadRecents() {
+    const res = await Parse.Cloud.run('getRecentSubscriptions');
+    const container = document.getElementById('recents');
+    container.innerHTML = '';
+    for (const s of res) {
+      let l = 'N/A', n = 'None';
       try {
-        let url;
-        if (query) {
-          url = `https://api.themoviedb.org/3/search/${currentMediaType}?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`;
-          if (year) {
-            url += currentMediaType === 'movie' ? `&primary_release_year=${year}` : `&first_air_date_year=${year}`;
-          }
-        } else {
-          url = `https://api.themoviedb.org/3/discover/${currentMediaType}?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
-          if (genre) url += `&with_genres=${genre}`;
-          if (year) {
-            url += currentMediaType === 'movie' ? `&primary_release_year=${year}` : `&first_air_date_year=${year}`;
-          }
-        }
+        const r = await fetch(`https://api.themoviedb.org/3/tv/${s.showId}?api_key=${TMDB}`);
+        const d = await r.json();
+        l = fmt(d.last_air_date);
+        if(d.next_episode_to_air) n = fmt(d.next_episode_to_air.air_date);
+      } catch(e) {}
 
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        let results = data.results || [];
-        // Local genre filter for text search (TMDB search endpoint doesn't support with_genres)
-        if (query && genre) {
-          results = results.filter(item => item.genre_ids && item.genre_ids.includes(parseInt(genre)));
-        }
-
-        renderGallery(results);
-      } catch (err) {
-        gallery.innerHTML = '<div class="message">Error loading content.</div>';
-      }
+      const div = document.createElement('div');
+      div.className = 'recent-card glossy';
+      div.innerHTML = `
+        <div class="recent-info">
+          <span class="name">${s.showName}</span>
+          <span class="sub-date">Subscribed: ${fmt(s.date)}</span>
+          <div class="ep">Last: ${l} | Next: ${n}</div>
+        </div>
+        <button class="del-btn" onclick="delSub('${s.showId}')">
+          <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+        </button>
+      `;
+      container.appendChild(div);
     }
+  }
 
-    function renderGallery(results) {
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = '';
-      const localSubs = getSubscribedShows();
+  async function delSub(id) {
+    await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: id });
+    let subs = JSON.parse(localStorage.getItem('subs') || '[]').filter(i => i !== id);
+    localStorage.setItem('subs', JSON.stringify(subs));
+    loadRecents();
+    search();
+  }
 
-      if (results.length === 0) {
-        gallery.innerHTML = '<div class="message">No matches found.</div>';
-        return;
-      }
-
-      results.forEach(item => {
-        const title = item.title || item.name;
-        const date = item.release_date || item.first_air_date || '';
-        const img = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster';
-        const isSubscribed = localSubs.includes(item.id.toString());
-
-        const card = document.createElement('div');
-        card.className = 'card glossy';
-        card.innerHTML = `
-          <img src="${img}" alt="${title}" loading="lazy" />
-          <div class="card-info">
-            <div class="card-title">${title}</div>
-            <div class="card-meta">${currentMediaType.toUpperCase()} • ${date.split('-')[0] || 'N/A'}</div>
-            <button class="subscribe-btn ${isSubscribed ? 'subscribed' : ''}" 
-              onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}', this)" 
-              ${isSubscribed ? 'disabled' : ''}>
-              ${isSubscribed ? 'Subscribed ✓' : 'Subscribe Alerts'}
-            </button>
-          </div>
-        `;
-        gallery.appendChild(card);
-      });
-    }
-
-    async function loadRecentSubscriptions() {
-      const container = document.getElementById('recentContainer');
-      try {
-        const results = await Parse.Cloud.run('getRecentSubscriptions');
-        container.innerHTML = '';
-        if (results.length === 0) {
-          container.innerHTML = '<div class="message">No recent subscriptions.</div>';
-          return;
-        }
-
-        for (const sub of results) {
-          let lastAir = "N/A";
-          let nextAir = "None Scheduled";
-          try {
-            const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${sub.showId}?api_key=${TMDB_KEY}`);
-            const tmdbData = await tmdbRes.json();
-            lastAir = formatDate(tmdbData.last_air_date);
-            if(tmdbData.next_episode_to_air) nextAir = formatDate(tmdbData.next_episode_to_air.air_date);
-          } catch (e) {}
-
-          const card = document.createElement('div');
-          card.className = 'recent-card glossy';
-          card.innerHTML = `
-            <div class="info">
-              <span class="name">${sub.showName}</span>
-              <span class="date">Subscribed: ${formatDate(sub.date)}</span>
-              <div class="air-status">Last: ${lastAir} | Next: ${nextAir}</div>
-            </div>
-            <button class="delete-btn" onclick="removeSubscription('${sub.showId}')">
-              <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-            </button>
-          `;
-          container.appendChild(card);
-        }
-      } catch (err) { container.innerHTML = ''; }
-    }
-
-    async function removeSubscription(showId) {
-      if(!confirm("Unsubscribe?")) return;
-      await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: showId.toString() });
-      unmarkShowLocally(showId);
-      loadRecentSubscriptions();
-      performSearch();
-    }
-
-    function getSubscribedShows() { return JSON.parse(localStorage.getItem('subscribedShows') || '[]'); }
-    function markShowAsSubscribedLocally(id) {
-      const s = getSubscribedShows();
-      if(!s.includes(id.toString())) { s.push(id.toString()); localStorage.setItem('subscribedShows', JSON.stringify(s)); }
-    }
-    function unmarkShowLocally(id) {
-      localStorage.setItem('subscribedShows', JSON.stringify(getSubscribedShows().filter(i => i !== id.toString())));
-    }
-
-    async function subscribeToAlerts(id, name, btn) {
-      if (!swRegistration) return;
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') return;
-      btn.disabled = true;
-      const sub = await swRegistration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY) });
-      const PushSub = Parse.Object.extend("PushSubscription");
-      const n = new PushSub();
-      n.set("subscriptionObject", JSON.parse(JSON.stringify(sub)));
-      n.set("showId", id.toString());
-      n.set("showName", name);
-      await n.save();
-      markShowAsSubscribedLocally(id);
-      loadRecentSubscriptions();
-      performSearch();
-    }
-
-    function urlB64ToUint8Array(s) {
-      const p = '='.repeat((4 - s.length % 4) % 4);
-      const b = (s + p).replace(/\-/g, '+').replace(/_/g, '/');
-      const r = window.atob(b);
-      const o = new Uint8Array(r.length);
-      for (let i = 0; i < r.length; ++i) o[i] = r.charCodeAt(i);
-      return o;
-    }
-
-    window.onload = () => {
-      populateYears();
-      populateGenres();
-      performSearch();
-      loadRecentSubscriptions();
-    };
-  </script>
+  window.onload = () => {
+    const y = document.getElementById('y');
+    for(let i=2027; i>=1950; i--) y.innerHTML += `<option value="${i}">${i}</option>`;
+    loadGenres();
+    search();
+    loadRecents();
+    if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  };
+</script>
 </body>
 </html>
