@@ -4,168 +4,257 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0d1117" />
+  <meta name="theme-color" content="#0a0a0c" />
   <link rel="icon" href="./icon-512.png" type="image/png" />
-  <title>Movie & TV Glass Gallery</title>
+  <title>CinemaDash | Track Your Shows</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
 
   <style>
     :root {
-      --glass-bg: rgba(255, 255, 255, 0.1);
-      --glass-border: rgba(255, 255, 255, 0.2);
-      --glass-blur: blur(12px);
-      --accent: #00c6ff;
-    }
-    
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1f1c2c, #928dab);
-      background-attachment: fixed;
-      color: #fff;
-      min-height: 100vh;
+      --bg: #0a0a0c;
+      --card-bg: #16161a;
+      --accent: #3d5afe;
+      --accent-hover: #536dfe;
+      --text-main: #ffffff;
+      --text-dim: #a1a1aa;
+      --danger: #ef4444;
+      --success: #22c55e;
     }
 
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* Layout Containers */
+    .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; }
+
     header {
+      background: rgba(10, 10, 12, 0.8);
+      backdrop-filter: blur(20px);
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border-bottom: 1px solid var(--glass-border);
-      padding: 15px 20px;
+      padding: 20px 0;
+      border-bottom: 1px solid #27272a;
+    }
+
+    header .nav-flex {
       display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
     }
 
-    /* Recent Subscriptions Section */
-    .recent-subs-container {
-      padding: 20px 20px 0 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+    h1 { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+    h1 span { color: var(--accent); }
+
+    /* Search Bar UI */
+    .search-group {
+      display: flex;
+      background: #1c1c21;
+      border-radius: 12px;
+      padding: 5px;
+      border: 1px solid #27272a;
+      flex-grow: 1;
+      max-width: 600px;
     }
 
-    .recent-subs-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-      color: #ddd;
+    .search-group input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      padding: 10px 15px;
+      flex-grow: 1;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .search-group select {
+      background: #27272a;
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0 10px;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    /* Section Headers */
+    .section-label {
+      margin: 40px 0 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .recent-subs-list {
-      display: flex;
       gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-      scrollbar-width: thin;
     }
 
-    .recent-subs-list::-webkit-scrollbar { height: 4px; }
-    .recent-subs-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+    .section-label::after {
+      content: '';
+      height: 1px;
+      background: #27272a;
+      flex-grow: 1;
+    }
 
-    .sub-chip {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      padding: 6px 15px;
+    /* Tracked Cards Dashboard */
+    .tracked-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .tracked-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid #27272a;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .tracked-card .title { font-weight: 600; font-size: 1.1rem; color: #fff; padding-right: 30px; }
+    
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
       border-radius: 20px;
-      white-space: nowrap;
-      font-size: 0.85rem;
-      backdrop-filter: var(--glass-blur);
-      animation: fadeIn 0.5s ease forwards;
+      background: #27272a;
+      color: var(--text-dim);
+      width: fit-content;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(10px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
-
-    input, select, button {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid var(--glass-border);
-      color: #fff;
-      padding: 8px 12px;
+    .episode-info {
+      background: #1c1c21;
       border-radius: 8px;
-      outline: none;
-      backdrop-filter: var(--glass-blur);
+      padding: 10px;
+      font-size: 0.85rem;
     }
 
-    button { cursor: pointer; transition: 0.3s; font-weight: bold; }
-    button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.3); }
+    .episode-info div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .episode-info span { color: var(--text-dim); }
+    .episode-info b { color: var(--accent); }
 
+    .btn-delete {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(239, 68, 68, 0.1);
+      border: none;
+      color: var(--danger);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .btn-delete:hover { background: var(--danger); color: white; }
+
+    /* Main Gallery Grid */
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+      gap: 25px;
+      padding-bottom: 50px;
     }
 
-    .card {
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
+    .movie-card {
+      background: var(--card-bg);
+      border-radius: 12px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.3s;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .card:hover { transform: translateY(-5px); }
-    .card img { width: 100%; height: 300px; object-fit: cover; background: #333; }
-    .card-info { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-    .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; }
-    .card-type { font-size: 0.8rem; color: #ddd; margin-bottom: 10px; text-transform: uppercase; }
+    .movie-card:hover { transform: scale(1.03); }
 
-    .subscribe-btn {
-      background: linear-gradient(135deg, #00c6ff, #0072ff);
-      border: none; width: 100%; padding: 10px; border-radius: 8px; margin-top: 10px; color: white;
+    .poster-wrap { position: relative; aspect-ratio: 2/3; background: #27272a; }
+    .poster-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+    .card-content { padding: 15px; }
+    .card-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 12px; }
+
+    .btn-subscribe {
+      width: 100%;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      color: white;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
     }
 
-    .subscribe-btn.subscribed {
-      background: linear-gradient(135deg, #11998e, #38ef7d);
-      cursor: default;
-    }
+    .btn-subscribe:hover { background: #3f3f46; }
+    .btn-subscribe.active { background: var(--success); border-color: var(--success); cursor: default; }
 
-    .message { text-align: center; padding: 40px; font-size: 1.2rem; color: #ddd; grid-column: 1 / -1; }
+    /* Empty States */
+    .empty-msg { text-align: center; color: var(--text-dim); padding: 40px; grid-column: 1/-1; }
+
+    @media (max-width: 768px) {
+      .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>GlassGallery</h1>
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="Search movies & TV..." />
-      <select id="genreSelect"><option value="">All Genres</option></select>
-      <select id="yearSelect"><option value="">Any Year</option></select>
-      <button onclick="performSearch()">Search</button>
+    <div class="container nav-flex">
+      <h1>Cinema<span>Dash</span></h1>
+      <div class="search-group">
+        <input type="text" id="searchInput" placeholder="Search for a show or movie..." />
+        <select id="genreSelect"><option value="">All Genres</option></select>
+        <button class="btn-primary" onclick="performSearch()">Search</button>
+      </div>
     </div>
   </header>
 
-  <!-- RECENT SUBSCRIPTIONS SECTION -->
-  <div class="recent-subs-container" id="recentSubsContainer" style="display: none;">
-    <div class="recent-subs-title">🔥 Recently Tracked Shows</div>
-    <div class="recent-subs-list" id="recentSubsList">
-      <!-- Chips will load here -->
+  <main class="container">
+    <!-- DASHBOARD: TRACKED SHOWS -->
+    <div id="trackedSection" style="display:none;">
+      <div class="section-label">Your Tracked Subscriptions</div>
+      <div class="tracked-grid" id="trackedGrid"></div>
     </div>
-  </div>
 
-  <div class="gallery" id="gallery">
-    <div class="message">Loading content...</div>
-  </div>
+    <!-- MAIN EXPLORE GALLERY -->
+    <div class="section-label">Explore Content</div>
+    <div class="gallery" id="gallery">
+      <div class="empty-msg">Waking up the database...</div>
+    </div>
+  </main>
 
   <script>
     const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
@@ -176,11 +265,157 @@
     Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
     Parse.serverURL = 'https://parseapi.back4app.com/';
 
-    let swRegistration = null;
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.register('sw.js')
-      .then(swReg => { swRegistration = swReg; })
-      .catch(error => { console.error('Service Worker Error', error); });
+    let swReg = null;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(reg => swReg = reg);
+    }
+
+    // Local Storage Helpers
+    const getLocalSubs = () => JSON.parse(localStorage.getItem('my_subs') || '[]');
+    const saveLocalSub = (id) => {
+      const s = getLocalSubs();
+      if(!s.includes(id)) { s.push(id); localStorage.setItem('my_subs', JSON.stringify(s)); }
+    };
+    const removeLocalSub = (id) => {
+      const s = getLocalSubs().filter(i => i != id);
+      localStorage.setItem('my_subs', JSON.stringify(s));
+    };
+
+    /**
+     * LOAD DASHBOARD DATA
+     * Fetches details from TMDB for each unique subscription
+     */
+    async function loadDashboard() {
+      const grid = document.getElementById('trackedGrid');
+      const section = document.getElementById('trackedSection');
+      
+      try {
+        const subs = await Parse.Cloud.run('getRecentSubscriptions');
+        if (!subs || subs.length === 0) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+        grid.innerHTML = '';
+
+        // Fetch TMDB data for each show to get Last/Next Episode
+        for (const show of subs) {
+          const res = await fetch(`https://api.themoviedb.org/3/tv/${show.showId}?api_key=${TMDB_KEY}`);
+          const details = await res.json();
+          
+          const card = document.createElement('div');
+          card.className = 'tracked-card';
+          
+          const lastEp = details.last_episode_to_air ? details.last_episode_to_air.air_date : 'N/A';
+          const nextEp = details.next_episode_to_air ? details.next_episode_to_air.air_date : 'TBA';
+          
+          card.innerHTML = `
+            <button class="btn-delete" onclick="unsubscribe('${show.showId}')" title="Unsubscribe">×</button>
+            <div class="status-badge">Alerts Enabled</div>
+            <div class="title">${show.showName}</div>
+            <div class="episode-info">
+              <div><span>Last Aired:</span> <b>${lastEp}</b></div>
+              <div><span>Next Episode:</span> <b>${nextEp}</b></div>
+            </div>
+          `;
+          grid.appendChild(card);
+        }
+      } catch (err) { console.error("Dash error:", err); }
+    }
+
+    async function subscribe(id, name, btn) {
+      if (!swReg) return alert("Push not supported.");
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        btn.disabled = true;
+        btn.textContent = "Syncing...";
+
+        const subObj = await swReg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        const PSub = Parse.Object.extend("PushSubscription");
+        const ps = new PSub();
+        ps.set("subscriptionObject", JSON.parse(JSON.stringify(subObj)));
+        ps.set("showId", id.toString());
+        ps.set("showName", name);
+        await ps.save();
+
+        saveLocalSub(id.toString());
+        btn.textContent = "Tracked ✓";
+        btn.classList.add('active');
+        loadDashboard();
+      } catch (e) { 
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = "Try Again";
+      }
+    }
+
+    async function unsubscribe(showId) {
+      if(!confirm("Stop alerts for this show?")) return;
+      try {
+        await Parse.Cloud.run('deleteSubscription', { showId });
+        removeLocalSub(showId);
+        loadDashboard();
+        performSearch(); // Refresh gallery buttons
+      } catch (e) { alert("Failed to delete."); }
+    }
+
+    // Standard TMDB Logic
+    async function performSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      const g = document.getElementById('genreSelect').value;
+      const gallery = document.getElementById('gallery');
+      const localSubs = getLocalSubs();
+      
+      gallery.innerHTML = '<div class="empty-msg">Searching content...</div>';
+      
+      let results = [];
+      try {
+        if (q) {
+          const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`);
+          const data = await res.json();
+          results = data.results.filter(i => i.media_type !== 'person');
+        } else {
+          const res = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_KEY}`);
+          const data = await res.json();
+          results = data.results;
+        }
+
+        gallery.innerHTML = '';
+        results.forEach(item => {
+          const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date);
+          const name = item.name || item.title;
+          const date = (item.first_air_date || item.release_date || '').split('-')[0];
+          const img = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
+          
+          const card = document.createElement('div');
+          card.className = 'movie-card';
+
+          let actionHtml = '';
+          if (isTV) {
+            const isTracked = localSubs.includes(item.id.toString());
+            actionHtml = isTracked 
+              ? `<button class="btn-subscribe active" disabled>Tracked ✓</button>`
+              : `<button class="btn-subscribe" onclick="subscribe('${item.id}', '${name.replace(/'/g, "\\'")}', this)">Track Episodes</button>`;
+          }
+
+          card.innerHTML = `
+            <div class="poster-wrap"><img src="${img}" loading="lazy"></div>
+            <div class="card-content">
+              <div class="card-title">${name}</div>
+              <div class="card-meta">${isTV ? 'TV Series' : 'Movie'} • ${date || 'TBA'}</div>
+              ${actionHtml}
+            </div>
+          `;
+          gallery.appendChild(card);
+        });
+      } catch (e) { gallery.innerHTML = '<div class="empty-msg">Failed to load content.</div>'; }
     }
 
     function urlB64ToUint8Array(base64String) {
@@ -188,187 +423,26 @@
       const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
       const rawData = window.atob(base64);
       const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-      }
+      for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
       return outputArray;
     }
 
-    function getSubscribedShows() {
-      const subs = localStorage.getItem('subscribedShows');
-      return subs ? JSON.parse(subs) : [];
-    }
-
-    function markShowAsSubscribedLocally(showId) {
-      const subs = getSubscribedShows();
-      if (!subs.includes(showId.toString())) {
-        subs.push(showId.toString());
-        localStorage.setItem('subscribedShows', JSON.stringify(subs));
-      }
-    }
-
-    /**
-     * FETCH RECENT SUBSCRIPTIONS
-     */
-    async function loadRecentSubscriptions() {
-      try {
-        const recent = await Parse.Cloud.run('getRecentSubscriptions');
-        const list = document.getElementById('recentSubsList');
-        const container = document.getElementById('recentSubsContainer');
-
-        if (recent && recent.length > 0) {
-          container.style.display = 'block';
-          list.innerHTML = '';
-          recent.forEach(item => {
-            const chip = document.createElement('div');
-            chip.className = 'sub-chip';
-            chip.textContent = item.showName;
-            list.appendChild(chip);
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching recent subscriptions:', err);
-      }
-    }
-
-    async function subscribeToAlerts(showId, showName, btnElement) {
-      if (!swRegistration) return alert('Service worker not registered.');
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return alert('Notifications denied.');
-
-        btnElement.disabled = true;
-        btnElement.textContent = 'Subscribing...';
-
-        const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
-        const subscription = await swRegistration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey
-        });
-
-        const PushSubClass = Parse.Object.extend("PushSubscription");
-        const newSub = new PushSubClass();
-        newSub.set("subscriptionObject", JSON.parse(JSON.stringify(subscription)));
-        newSub.set("showId", showId.toString());
-        newSub.set("showName", showName);
-        await newSub.save();
-        
-        markShowAsSubscribedLocally(showId);
-        btnElement.textContent = 'Subscribed ✓';
-        btnElement.classList.add('subscribed');
-        
-        // Refresh the recent list
-        loadRecentSubscriptions();
-        alert(`Successfully subscribed to ${showName}!`);
-      } catch (err) {
-        console.error('Subscription error:', err);
-        btnElement.disabled = false;
-        btnElement.textContent = 'Subscribe Alerts';
-      }
-    }
-
-    async function populateGenres() {
-      try {
-        const [movieRes, tvRes] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_KEY}`),
-          fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_KEY}`)
-        ]);
-        const movieData = await movieRes.json();
-        const tvData = await tvRes.json();
-        const genreMap = new Map();
-        if(movieData.genres) movieData.genres.forEach(g => genreMap.set(g.id, g.name));
-        if(tvData.genres) tvData.genres.forEach(g => genreMap.set(g.id, g.name));
-        const genreSelect = document.getElementById('genreSelect');
-        const sortedGenres = Array.from(genreMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-        sortedGenres.forEach(([id, name]) => {
-          const option = document.createElement('option');
-          option.value = id; option.textContent = name;
-          genreSelect.appendChild(option);
-        });
-      } catch (err) { console.error(err); }
-    }
-
-    function populateYears() {
-      const yearSelect = document.getElementById('yearSelect');
-      const currentYear = new Date().getFullYear();
-      for (let i = currentYear + 2; i >= 1900; i--) {
-        const option = document.createElement('option');
-        option.value = i; option.textContent = i;
-        yearSelect.appendChild(option);
-      }
-    }
-
-    function renderGallery(results) {
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = '';
-      if (!results || results.length === 0) {
-        gallery.innerHTML = '<div class="message">No results found.</div>';
-        return;
-      }
-      const subscribedShows = getSubscribedShows();
-      results.forEach(item => {
-        const title = item.title || item.name;
-        const type = item.media_type === 'movie' ? 'Movie' : 'TV Show';
-        const imgPath = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
-        const releaseDate = item.release_date || item.first_air_date || 'N/A';
-        const card = document.createElement('div');
-        card.className = 'card';
-        let subButtonHTML = '';
-        if (item.media_type === 'tv' || !item.media_type) {
-          const isSubscribed = subscribedShows.includes(item.id.toString());
-          if (isSubscribed) {
-            subButtonHTML = `<button class="subscribe-btn subscribed" disabled>Subscribed ✓</button>`;
-          } else {
-            subButtonHTML = `<button class="subscribe-btn" onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}', this)">Subscribe Alerts</button>`;
-          }
-        }
-        card.innerHTML = `
-          <img src="${imgPath}" alt="${title}" loading="lazy"/>
-          <div class="card-info">
-            <div><div class="card-title">${title}</div><div class="card-type">${type} | ${releaseDate}</div></div>
-            ${subButtonHTML}
-          </div>`;
-        gallery.appendChild(card);
+    async function init() {
+      // Load Genres
+      const res = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_KEY}`);
+      const data = await res.json();
+      const sel = document.getElementById('genreSelect');
+      data.genres.forEach(gen => {
+        const opt = document.createElement('option');
+        opt.value = gen.id; opt.textContent = gen.name;
+        sel.appendChild(opt);
       });
-    }
 
-    async function performSearch() {
-      const query = document.getElementById('searchInput').value.trim();
-      const genre = document.getElementById('genreSelect').value;
-      const year = document.getElementById('yearSelect').value;
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = '<div class="message">Searching...</div>';
-      let finalResults = [];
-      try {
-        if (query) {
-          const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}&include_adult=false`;
-          const response = await fetch(url);
-          const data = await response.json();
-          finalResults = (data.results || []).filter(r => r.media_type !== 'person');
-          if (genre) finalResults = finalResults.filter(item => item.genre_ids && item.genre_ids.includes(parseInt(genre)));
-          if (year) finalResults = finalResults.filter(item => (item.release_date || item.first_air_date || '').startsWith(year));
-        } else {
-          let movieUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
-          let tvUrl = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_KEY}&sort_by=popularity.desc`;
-          if (genre) { movieUrl += `&with_genres=${genre}`; tvUrl += `&with_genres=${genre}`; }
-          if (year) { movieUrl += `&primary_release_year=${year}`; tvUrl += `&first_air_date_year=${year}`; }
-          const [movieRes, tvRes] = await Promise.all([ fetch(movieUrl), fetch(tvUrl) ]);
-          const movies = ((await movieRes.json()).results || []).map(m => ({ ...m, media_type: 'movie' }));
-          const tvShows = ((await tvRes.json()).results || []).map(t => ({ ...t, media_type: 'tv' }));
-          finalResults = [...movies, ...tvShows].sort((a, b) => b.popularity - a.popularity);
-        }
-        renderGallery(finalResults);
-      } catch (err) { gallery.innerHTML = '<div class="message">Error fetching data.</div>'; }
-    }
-
-    document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
-    window.onload = async () => {
-      populateYears();
-      await populateGenres();
       performSearch();
-      loadRecentSubscriptions();
-    };
+      loadDashboard();
+    }
+
+    window.onload = init;
   </script>
 </body>
 </html>
