@@ -558,7 +558,9 @@
         } else {
             errorMessage += "An unknown error occurred. Ensure your `sw.js` is correctly deployed and the site is served over HTTPS.";
         }
-        alert(errorMessage);
+        alert(errorMessage + "
+
+Error: " + e.message); // Added e.message for more info
         btn.disabled = false;
         btn.textContent = "Track Episodes"; 
       }
@@ -605,6 +607,12 @@
       let apiUrl = '';
 
       try {
+        if (!TMDB_KEY || TMDB_KEY === 'YOUR_TMDB_API_KEY') { // Check for placeholder key
+            console.error("TMDB_KEY is not set or is a placeholder.");
+            gallery.innerHTML = '<div class="empty-msg">TMDB API Key is missing or invalid. Please check your `TMDB_KEY`.</div>';
+            return;
+        }
+
         if (q) {
           if (mediaTypeFilter === 'movie') {
             apiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
@@ -624,13 +632,27 @@
           }
         }
 
+        console.log('Generated TMDB API URL:', apiUrl); // DEBUG LOG
+
         const res = await fetch(apiUrl);
+        if (!res.ok) {
+            console.error('TMDB API response not OK:', res.status, res.statusText);
+            const errorText = await res.text();
+            console.error('TMDB API Error Body:', errorText);
+            gallery.innerHTML = `<div class="empty-msg">Error fetching data from TMDB. Status: ${res.status}. Please check your API key and network connection.</div>`;
+            return;
+        }
+
         const data = await res.json();
+        console.log('Raw TMDB API Response:', data); // DEBUG LOG
+
         results = data.results.filter(i => i.media_type !== 'person'); 
         
         if (q && mediaTypeFilter !== 'all') {
           results = results.filter(item => item.media_type === mediaTypeFilter);
         }
+        
+        console.log('Filtered Results before rendering:', results); // DEBUG LOG
 
         if (results.length === 0) {
             gallery.innerHTML = '<div class="empty-msg">No results found for your query.</div>';
@@ -667,7 +689,7 @@
         });
       } catch (e) { 
         console.error("Search error:", e);
-        gallery.innerHTML = '<div class="empty-msg">Failed to load content. Please check your connection and try again.</div>'; 
+        gallery.innerHTML = `<div class="empty-msg">An unexpected error occurred during search: ${e.message}. Please check your browser console for more details.</div>`; 
       }
     }
 
@@ -681,12 +703,9 @@
     }
 
     async function init() {
-      // Genre select element was removed in the previous redesign.
-      // If genre filtering is desired, a new UI element and logic would need to be added.
-      // const sel = document.getElementById('genreSelect'); 
-      // if (sel) sel.remove(); 
+      // No genre select element in the current UI, so no need to load genres.
 
-      performSearch();
+      performSearch(); // Initial load of trending content
       loadDashboard();
     }
 
@@ -695,6 +714,7 @@
       const searchInput = document.getElementById('searchInput');
       searchInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
+          event.preventDefault(); // Prevent form submission if applicable
           performSearch();
         }
       });
