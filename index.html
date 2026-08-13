@@ -16,15 +16,18 @@
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
 
   <style>
+    /* New Color Palette & Global Styles */
     :root {
-      --bg: #0a0a0c;
-      --card-bg: #16161a;
-      --accent: #3d5afe;
-      --accent-hover: #536dfe;
-      --text-main: #ffffff;
-      --text-dim: #a1a1aa;
+      --bg-dark: #0f001f; /* Darkest purple-black */
+      --bg-medium: #1f0a38; /* Medium dark purple */
+      --card-bg: #280e4b; /* Card background purple */
+      --accent-purple: #9d4edd; /* Vibrant purple accent */
+      --accent-purple-hover: #b06efc; /* Lighter purple on hover */
+      --text-main: #e0e0e0;
+      --text-dim: #a0a0a0;
       --danger: #ef4444;
       --success: #22c55e;
+      --border-color: #3b1b60; /* Subtle border color */
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -32,22 +35,27 @@
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background-color: var(--bg);
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
       color: var(--text-main);
-      line-height: 1.5;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     /* Layout Containers */
-    .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; }
+    .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; width: 100%; }
 
+    /* Header */
     header {
-      background: rgba(10, 10, 12, 0.8);
-      backdrop-filter: blur(20px);
+      background: rgba(15, 0, 31, 0.8); /* Slightly transparent for blur effect */
+      backdrop-filter: blur(15px);
       position: sticky;
       top: 0;
       z-index: 100;
-      padding: 20px 0;
-      border-bottom: 1px solid #27272a;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
 
     header .nav-flex {
@@ -58,55 +66,67 @@
       gap: 20px;
     }
 
-    h1 { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
-    h1 span { color: var(--accent); }
+    h1 { margin: 0; font-size: 1.8rem; font-weight: 700; letter-spacing: -0.8px; color: var(--text-main); }
+    h1 span { color: var(--accent-purple); }
 
-    /* Search Bar UI */
-    .search-group {
+    /* Search & Filter Section */
+    .search-section {
       display: flex;
-      flex-direction: column; /* Stack input and toggle on small screens */
-      gap: 10px;
-      background: #1c1c21;
+      flex-direction: column;
+      gap: 15px;
+      padding: 25px 0;
+      width: 100%;
+      max-width: 600px; /* Constrain search section width */
+      margin: 20px auto; /* Center it */
+    }
+
+    .search-input-group {
+      display: flex;
+      background: var(--card-bg);
       border-radius: 12px;
-      padding: 5px;
-      border: 1px solid #27272a;
-      flex-grow: 1;
-      max-width: 420px; /* Approximately 70% smaller than 600px */
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
-    .search-input-area {
-      display: flex;
-      gap: 5px;
-      flex-grow: 1;
-    }
-
-    .search-group input {
+    .search-input-group input {
       background: transparent;
       border: none;
-      color: #fff;
-      padding: 10px 15px;
+      color: var(--text-main);
+      padding: 12px 18px;
       flex-grow: 1;
       font-family: inherit;
+      font-size: 1rem;
       outline: none;
+      &::placeholder { color: var(--text-dim); }
     }
 
-    .search-group select {
-      background: #27272a;
+    .btn-search {
+      background: var(--accent-purple);
+      color: white;
       border: none;
-      color: #fff;
-      border-radius: 8px;
-      padding: 0 10px;
-      margin-right: 5px;
+      padding: 10px 20px;
+      border-radius: 0 12px 12px 0; /* Only right corners */
+      font-weight: 600;
       cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      font-size: 0.95rem;
+      flex-shrink: 0;
     }
+
+    .btn-search:hover { background: var(--accent-purple-hover); transform: translateY(-1px); }
+    .btn-search:active { transform: translateY(0); }
 
     /* TV/Movies Toggle */
     .media-type-toggle {
       display: flex;
-      background: #27272a;
-      border-radius: 8px;
+      background: var(--bg-medium);
+      border-radius: 10px;
       overflow: hidden;
-      flex-shrink: 0; /* Prevent it from shrinking */
+      border: 1px solid var(--border-color);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+      width: fit-content; /* Make it fit content */
+      margin: 0 auto; /* Center the toggle */
     }
 
     .media-type-toggle input[type="radio"] {
@@ -114,111 +134,119 @@
     }
 
     .media-type-toggle label {
-      padding: 8px 12px;
-      font-size: 0.85rem;
+      padding: 10px 18px;
+      font-size: 0.9rem;
       cursor: pointer;
       color: var(--text-dim);
-      transition: background-color 0.2s, color 0.2s;
+      transition: background-color 0.2s ease, color 0.2s ease;
       flex: 1;
       text-align: center;
       white-space: nowrap;
+      position: relative;
     }
 
     .media-type-toggle input[type="radio"]:checked + label {
-      background-color: var(--accent);
+      background-color: var(--accent-purple);
       color: var(--text-main);
       font-weight: 500;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-      flex-shrink: 0;
-    }
-
-    .btn-primary:hover { background: var(--accent-hover); }
 
     /* Section Headers */
     .section-label {
-      margin: 40px 0 20px;
-      font-size: 1.1rem;
+      margin: 50px 0 25px;
+      font-size: 1.3rem;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
+      color: var(--text-main);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
 
     .section-label::after {
       content: '';
       height: 1px;
-      background: #27272a;
+      background: var(--border-color);
       flex-grow: 1;
     }
 
-    /* Tracked Cards Dashboard - Compact */
+    /* Tracked Cards Dashboard - Compact & Modern */
     .tracked-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 15px; /* Reduced gap */
+      gap: 20px;
     }
 
     .tracked-card {
       background: var(--card-bg);
-      border-radius: 12px; /* Slightly smaller radius */
-      padding: 15px; /* Reduced padding */
-      border: 1px solid #27272a;
+      border-radius: 15px;
+      padding: 18px;
+      border: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
-      gap: 8px; /* Reduced gap */
+      gap: 8px;
       position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      transition: transform 0.2s ease;
     }
 
-    .tracked-card .title { font-weight: 600; font-size: 1rem; color: #fff; padding-right: 25px; margin-bottom: 2px; } /* Reduced font size and padding */
+    .tracked-card:hover { transform: translateY(-3px); }
+
+    .tracked-card .title { 
+      font-weight: 600; 
+      font-size: 1.05rem; 
+      color: var(--text-main); 
+      padding-right: 35px; 
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     
     .status-badge {
-      font-size: 0.7rem; /* Smaller font size */
-      padding: 3px 8px; /* Reduced padding */
-      border-radius: 16px; /* Smaller radius */
-      background: #27272a;
-      color: var(--text-dim);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(var(--success), 0.2); /* Semi-transparent success */
+      color: var(--success);
       width: fit-content;
+      font-weight: 500;
+      border: 1px solid rgba(var(--success), 0.4);
     }
 
     .episode-info {
-      background: #1c1c21;
-      border-radius: 8px;
-      padding: 8px; /* Reduced padding */
-      font-size: 0.8rem; /* Smaller font size */
+      background: var(--bg-medium);
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-size: 0.88rem;
+      border: 1px solid var(--border-color);
     }
 
-    .episode-info div { display: flex; justify-content: space-between; margin-bottom: 3px; } /* Reduced margin */
-    .episode-info div:last-child { margin-bottom: 0; } /* No margin on last item */
+    .episode-info div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .episode-info div:last-child { margin-bottom: 0; }
     .episode-info span { color: var(--text-dim); }
-    .episode-info b { color: var(--accent); }
+    .episode-info b { color: var(--accent-purple-hover); font-weight: 600; }
 
     .btn-delete {
       position: absolute;
-      top: 10px; /* Adjusted position */
-      right: 10px; /* Adjusted position */
-      background: rgba(239, 68, 68, 0.1);
+      top: 15px;
+      right: 15px;
+      background: rgba(var(--danger), 0.15);
       border: none;
       color: var(--danger);
-      width: 28px; /* Smaller button */
-      height: 28px; /* Smaller button */
-      border-radius: 6px; /* Smaller radius */
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      transition: 0.2s;
-      font-size: 1rem;
+      font-size: 1.1rem;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      border: 1px solid rgba(var(--danger), 0.3);
     }
 
     .btn-delete:hover { background: var(--danger); color: white; }
@@ -227,65 +255,134 @@
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 25px;
+      gap: 30px;
       padding-bottom: 50px;
+      flex-grow: 1; /* Allow gallery to take available space */
     }
 
     .movie-card {
       background: var(--card-bg);
-      border-radius: 12px;
+      border-radius: 15px;
       overflow: hidden;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      border: 1px solid var(--border-color);
     }
 
-    .movie-card:hover { transform: scale(1.03); }
+    .movie-card:hover { transform: scale(1.04); box-shadow: 0 12px 35px rgba(0,0,0,0.6); }
 
     .poster-wrap { position: relative; aspect-ratio: 2/3; background: #27272a; }
-    .poster-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .poster-wrap img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      display: block;
+      border-bottom: 1px solid var(--border-color);
+    }
 
-    .card-content { padding: 15px; }
-    .card-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-meta { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 12px; }
+    .card-content { padding: 18px; display: flex; flex-direction: column; flex-grow: 1; }
+    .card-title { font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); margin-bottom: 5px;}
+    .card-meta { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 15px; }
 
     .btn-subscribe {
       width: 100%;
-      background: #27272a;
-      border: 1px solid #3f3f46;
-      color: white;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      color: var(--accent-purple);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
+      margin-top: auto; /* Push to bottom */
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
 
-    .btn-subscribe:hover { background: #3f3f46; }
-    .btn-subscribe.active { background: var(--success); border-color: var(--success); cursor: default; }
+    .btn-subscribe:hover { background: var(--border-color); color: var(--accent-purple-hover); }
+    .btn-subscribe.active { 
+      background: var(--success); 
+      border-color: var(--success); 
+      color: white; 
+      cursor: default; 
+      box-shadow: 0 2px 10px rgba(34,197,94,0.4);
+    }
+    .btn-subscribe.active:hover { background: var(--success); border-color: var(--success); } /* No change on hover when active */
+
 
     /* Empty States */
-    .empty-msg { text-align: center; color: var(--text-dim); padding: 40px; grid-column: 1/-1; }
+    .empty-msg { 
+      text-align: center; 
+      color: var(--text-dim); 
+      padding: 60px 20px; 
+      grid-column: 1/-1; 
+      font-size: 1.1rem;
+      background: var(--bg-medium);
+      border-radius: 15px;
+      border: 1px solid var(--border-color);
+      margin: 20px 0;
+    }
 
     /* Mobile Compatibility */
     @media (max-width: 768px) {
-      .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-      header .nav-flex { flex-direction: column; align-items: stretch; }
-      .search-group { max-width: 100%; width: 100%; }
-      .search-input-area { flex-wrap: wrap; } /* Allow input and select to wrap */
-      .search-group input { flex-grow: 1; min-width: 120px; } /* Ensure input is not too small */
-      .search-group select { flex-shrink: 0; }
-      .btn-primary { width: 100%; }
-      .media-type-toggle { margin-top: 10px; }
+      .container { padding: 0 15px; }
+      header .nav-flex { 
+        flex-direction: column; 
+        align-items: stretch; 
+        gap: 15px;
+      }
+      h1 { font-size: 1.5rem; text-align: center; }
+      .search-section { 
+        padding: 15px 0; 
+        margin: 15px auto;
+        max-width: 100%;
+      }
+      .search-input-group { 
+        flex-direction: column; 
+        border-radius: 12px;
+      }
+      .btn-search { 
+        width: 100%; 
+        border-radius: 0 0 12px 12px; /* Bottom corners */
+        padding: 12px 20px;
+      }
+      .search-input-group input { 
+        border-radius: 12px 12px 0 0;
+        padding: 15px 18px;
+      }
+      .media-type-toggle {
+        width: 100%; /* Full width toggle */
+        border-radius: 10px;
+      }
+      .media-type-toggle label {
+        flex: 1; /* Distribute space evenly */
+        padding: 12px 10px;
+      }
+      .gallery { 
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+        gap: 20px;
+      }
+      .section-label { font-size: 1.1rem; margin: 30px 0 20px; }
+      .tracked-grid { grid-template-columns: 1fr; gap: 15px; } /* Stack tracked cards on mobile */
+      .tracked-card { padding: 15px; }
+      .tracked-card .title { font-size: 0.95rem; }
+      .episode-info { font-size: 0.8rem; padding: 8px 12px; }
+      .btn-delete { top: 12px; right: 12px; width: 26px; height: 26px; font-size: 1rem; }
+      .movie-card { border-radius: 12px; }
+      .card-content { padding: 12px; }
+      .card-title { font-size: 0.9rem; }
+      .card-meta { font-size: 0.75rem; margin-bottom: 10px; }
+      .btn-subscribe { font-size: 0.85rem; padding: 8px; border-radius: 8px; }
     }
 
     @media (max-width: 480px) {
-      h1 { font-size: 1.4rem; }
-      .search-group { padding: 8px; }
-      .search-group input { padding: 8px 10px; }
-      .media-type-toggle { flex-wrap: wrap; }
-      .media-type-toggle label { flex: 1 1 auto; min-width: unset; }
-      .tracked-card { padding: 12px; }
-      .tracked-card .title { font-size: 0.9rem; }
-      .episode-info { font-size: 0.75rem; padding: 6px; }
+      h1 { font-size: 1.3rem; }
+      .section-label { font-size: 1rem; margin: 25px 0 15px; }
+      .gallery { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+      .movie-card { border-radius: 10px; }
+      .card-content { padding: 10px; }
+      .card-title { font-size: 0.85rem; }
+      .card-meta { font-size: 0.7rem; margin-bottom: 8px; }
+      .btn-subscribe { font-size: 0.8rem; padding: 7px; border-radius: 7px; }
     }
   </style>
 </head>
@@ -294,25 +391,26 @@
   <header>
     <div class="container nav-flex">
       <h1>Cinema<span>Dash</span></h1>
-      <div class="search-group">
-        <div class="search-input-area">
-          <input type="text" id="searchInput" placeholder="Search for a show or movie..." />
-          <select id="genreSelect"><option value="">All Genres</option></select>
-          <button class="btn-primary" onclick="performSearch()">Search</button>
-        </div>
-        <div class="media-type-toggle">
-          <input type="radio" id="toggleAll" name="mediaType" value="all" checked onchange="performSearch()">
-          <label for="toggleAll">All</label>
-          <input type="radio" id="toggleMovies" name="mediaType" value="movie" onchange="performSearch()">
-          <label for="toggleMovies">Movies</label>
-          <input type="radio" id="toggleTV" name="mediaType" value="tv" onchange="performSearch()">
-          <label for="toggleTV">TV Shows</label>
-        </div>
-      </div>
     </div>
   </header>
 
   <main class="container">
+    <!-- Search & Filter Section -->
+    <div class="search-section">
+      <div class="search-input-group">
+        <input type="text" id="searchInput" placeholder="Search for a show or movie..." />
+        <button class="btn-search" onclick="performSearch()">Search</button>
+      </div>
+      <div class="media-type-toggle">
+        <input type="radio" id="toggleAll" name="mediaType" value="all" checked onchange="performSearch()">
+        <label for="toggleAll">All</label>
+        <input type="radio" id="toggleMovies" name="mediaType" value="movie" onchange="performSearch()">
+        <label for="toggleMovies">Movies</label>
+        <input type="radio" id="toggleTV" name="mediaType" value="tv" onchange="performSearch()">
+        <label for="toggleTV">TV Shows</label>
+      </div>
+    </div>
+
     <!-- DASHBOARD: TRACKED SHOWS -->
     <div id="trackedSection" style="display:none;">
       <div class="section-label">Your Tracked Subscriptions</div>
@@ -330,14 +428,19 @@
     const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
     const PARSE_JS_KEY = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp';
     const TMDB_KEY = '1070730380f5fee0d87cf0382670b255';
-    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8';
+    const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPgG7gcXOEYiFyNsz2Fh8'; /* Ensure this is correct */
 
     Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
     Parse.serverURL = 'https://parseapi.back4app.com/';
 
     let swReg = null;
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(reg => swReg = reg);
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        swReg = reg;
+        console.log('Service Worker registered!');
+      }).catch(error => {
+        console.error('Service Worker registration failed:', error);
+      });
     }
 
     // Local Storage Helpers
@@ -355,8 +458,9 @@
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A';
       try {
-        const date = new Date(dateString + 'T00:00:00'); // Add T00:00:00 to ensure UTC interpretation and avoid timezone issues
-        // Use toLocaleDateString for more robust formatting, but manually construct for specific format
+        // Parse date as UTC to avoid local timezone conversions affecting the date
+        const date = new Date(dateString + 'T00:00:00Z'); 
+        // Using UTC methods to construct the desired format
         const month = date.getUTCMonth() + 1; // getUTCMonth() is 0-indexed
         const day = date.getUTCDate();
         const year = date.getUTCFullYear();
@@ -385,7 +489,6 @@
         section.style.display = 'block';
         grid.innerHTML = '';
 
-        // Fetch TMDB data for each show to get Last/Next Episode
         for (const show of subs) {
           const res = await fetch(`https://api.themoviedb.org/3/tv/${show.showId}?api_key=${TMDB_KEY}`);
           const details = await res.json();
@@ -411,10 +514,16 @@
     }
 
     async function subscribe(id, name, btn) {
-      if (!swReg) return alert("Push not supported or service worker not registered.");
+      if (!swReg) {
+        alert("Push notifications not supported or service worker not registered. Please ensure you are on a secure (HTTPS) connection.");
+        return;
+      }
       try {
         const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return alert("Notification permission denied. Cannot track shows.");
+        if (permission !== 'granted') {
+          alert("Notification permission denied. Cannot track shows and send alerts.");
+          return;
+        }
 
         btn.disabled = true;
         btn.textContent = "Syncing...";
@@ -437,22 +546,31 @@
         loadDashboard();
       } catch (e) { 
         console.error("Subscription error:", e);
-        alert("Failed to subscribe. Make sure you have allowed notifications and your service worker is correctly configured.");
+        let errorMessage = "Failed to subscribe. ";
+        if (e.message.includes("permission denied")) {
+            errorMessage += "Notification permission might be blocked.";
+        } else if (e.message.includes("VAPID_PUBLIC_KEY")) {
+            errorMessage += "VAPID key might be incorrect or missing.";
+        } else if (e.name === "InvalidStateError") {
+            errorMessage += "Push service is not available (e.g., in private browsing).";
+        } else {
+            errorMessage += "An unknown error occurred. Make sure your service worker is correctly configured and the site is served over HTTPS.";
+        }
+        alert(errorMessage);
         btn.disabled = false;
-        btn.textContent = "Track Episodes"; // Reset button text on error
+        btn.textContent = "Track Episodes"; 
       }
     }
 
     async function unsubscribe(showId) {
       if(!confirm("Stop alerts for this show?")) return;
       try {
-        // Find the active push subscription object to remove it from the browser
         let browserSubscription = null;
         if (swReg && swReg.pushManager) {
           browserSubscription = await swReg.pushManager.getSubscription();
         }
 
-        // Send a request to your Parse Server to delete the subscription by showId
+        // Call Parse Cloud function to delete the subscription from the backend
         await Parse.Cloud.run('deleteSubscription', { showId: showId, endpoint: browserSubscription ? browserSubscription.endpoint : null });
         
         // Remove from local storage
@@ -460,23 +578,25 @@
         
         // Refresh UI
         loadDashboard();
-        performSearch(); // Refresh gallery buttons
-        
-        // Unsubscribe from the browser if it was a general subscription
+        performSearch(); // Refresh gallery buttons to show "Track Episodes" again
+
+        // Attempt to unsubscribe from the browser's push service if a subscription exists
         if (browserSubscription) {
-          await browserSubscription.unsubscribe();
+          const success = await browserSubscription.unsubscribe();
+          if (!success) {
+            console.warn("Browser unsubscribe failed, subscription might not have existed or was already invalid.");
+          }
         }
 
       } catch (e) { 
         console.error("Unsubscribe error:", e);
-        alert("Failed to delete subscription. It might have already been removed or an error occurred."); 
+        alert("Failed to delete subscription. It might have already been removed or an error occurred. Please try again."); 
       }
     }
 
     // Standard TMDB Logic
     async function performSearch() {
       const q = document.getElementById('searchInput').value.trim();
-      const g = document.getElementById('genreSelect').value; // Currently not used in API calls
       const mediaTypeFilter = document.querySelector('input[name="mediaType"]:checked').value;
       
       const gallery = document.getElementById('gallery');
@@ -489,52 +609,48 @@
 
       try {
         if (q) {
-          // Search specific media type or multi-search
           if (mediaTypeFilter === 'movie') {
             apiUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
           } else if (mediaTypeFilter === 'tv') {
             apiUrl = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
-          } else { // 'all' or default
+          } else { // 'all'
             apiUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`;
           }
         } else {
-          // Trending specific media type or all
+          // Trending
           if (mediaTypeFilter === 'movie') {
             apiUrl = `https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_KEY}`;
           } else if (mediaTypeFilter === 'tv') {
             apiUrl = `https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_KEY}`;
-          } else { // 'all' or default
+          } else { // 'all'
             apiUrl = `https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_KEY}`;
           }
         }
 
         const res = await fetch(apiUrl);
         const data = await res.json();
-        results = data.results.filter(i => i.media_type !== 'person'); // Filter out people from results
+        results = data.results.filter(i => i.media_type !== 'person'); 
         
-        // If a specific media type filter is applied, also filter out other types if multi-search was used
         if (q && mediaTypeFilter !== 'all') {
           results = results.filter(item => item.media_type === mediaTypeFilter);
         }
 
         if (results.length === 0) {
-            gallery.innerHTML = '<div class="empty-msg">No results found.</div>';
+            gallery.innerHTML = '<div class="empty-msg">No results found for your query.</div>';
             return;
         }
 
         gallery.innerHTML = '';
         results.forEach(item => {
-          // Determine if it's a TV show, prioritizing 'tv' media_type, or if it has first_air_date
-          const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date);
+          const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date); // Infer if media_type is missing
           const name = item.name || item.title;
-          const date = (item.first_air_date || item.release_date || '').split('-')[0];
+          const year = (item.first_air_date || item.release_date || '').split('-')[0];
           const img = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
           
           const card = document.createElement('div');
           card.className = 'movie-card';
 
           let actionHtml = '';
-          // Only show 'Track Episodes' button for TV series
           if (isTV) {
             const isTracked = localSubs.includes(item.id.toString());
             actionHtml = isTracked 
@@ -543,10 +659,10 @@
           }
 
           card.innerHTML = `
-            <div class="poster-wrap"><img src="${img}" loading="lazy"></div>
+            <div class="poster-wrap"><img src="${img}" loading="lazy" alt="${name} poster"></div>
             <div class="card-content">
               <div class="card-title">${name}</div>
-              <div class="card-meta">${isTV ? 'TV Series' : 'Movie'} • ${date || 'TBA'}</div>
+              <div class="card-meta">${isTV ? 'TV Series' : 'Movie'} • ${year || 'TBA'}</div>
               ${actionHtml}
             </div>
           `;
@@ -554,7 +670,7 @@
         });
       } catch (e) { 
         console.error("Search error:", e);
-        gallery.innerHTML = '<div class="empty-msg">Failed to load content. Please try again later.</div>'; 
+        gallery.innerHTML = '<div class="empty-msg">Failed to load content. Please check your connection and try again.</div>'; 
       }
     }
 
@@ -568,15 +684,11 @@
     }
 
     async function init() {
-      // Load Genres (optional, as it's not currently filtering by genre in search)
-      const res = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${TMDB_KEY}`); // Fetch TV genres
-      const data = await res.json();
+      // Genre select is removed as per redesign, but the ID still exists.
+      // If genre filtering is desired in the future, it would need to be re-added
+      // and integrated into the TMDB API calls.
       const sel = document.getElementById('genreSelect');
-      data.genres.forEach(gen => {
-        const opt = document.createElement('option');
-        opt.value = gen.id; opt.textContent = gen.name;
-        sel.appendChild(opt);
-      });
+      if (sel) sel.remove(); // Remove if it still exists in the DOM after header restructuring.
 
       performSearch();
       loadDashboard();
