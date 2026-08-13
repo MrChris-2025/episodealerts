@@ -69,11 +69,17 @@
 
     button {
       cursor: pointer;
-      transition: background 0.3s;
+      transition: background 0.3s, transform 0.1s;
       font-weight: bold;
     }
 
-    button:hover { background: rgba(255, 255, 255, 0.3); }
+    button:hover:not(:disabled) { 
+      background: rgba(255, 255, 255, 0.3); 
+    }
+    
+    button:active:not(:disabled) {
+      transform: scale(0.96);
+    }
 
     /* Gallery Grid */
     .gallery {
@@ -129,6 +135,7 @@
       letter-spacing: 1px;
     }
 
+    /* Subscription Buttons */
     .subscribe-btn {
       background: linear-gradient(135deg, #00c6ff, #0072ff);
       border: none;
@@ -140,7 +147,15 @@
       color: white;
     }
 
-    .subscribe-btn:hover { background: linear-gradient(135deg, #0072ff, #00c6ff); }
+    .subscribe-btn:hover:not(:disabled) { 
+      background: linear-gradient(135deg, #0072ff, #00c6ff); 
+    }
+
+    .subscribe-btn.subscribed {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+      cursor: default;
+    }
 
     /* Messages */
     .message {
@@ -203,13 +218,31 @@
       return outputArray;
     }
 
+    // LocalStorage tracking for subscribed shows
+    function getSubscribedShows() {
+      const subs = localStorage.getItem('subscribedShows');
+      return subs ? JSON.parse(subs) : [];
+    }
+
+    function markShowAsSubscribedLocally(showId) {
+      const subs = getSubscribedShows();
+      if (!subs.includes(showId.toString())) {
+        subs.push(showId.toString());
+        localStorage.setItem('subscribedShows', JSON.stringify(subs));
+      }
+    }
+
     // Subscribe to TV Show Alerts
-    async function subscribeToAlerts(showId, showName) {
+    async function subscribeToAlerts(showId, showName, btnElement) {
       if (!swRegistration) return alert('Service worker not registered.');
 
       try {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') return alert('Notifications denied.');
+
+        // Disable button during network request
+        btnElement.disabled = true;
+        btnElement.textContent = 'Subscribing...';
 
         const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
         const subscription = await swRegistration.pushManager.subscribe({
@@ -225,10 +258,19 @@
         newSub.set("showName", showName);
         
         await newSub.save();
+        
+        // Update Local State and UI
+        markShowAsSubscribedLocally(showId);
+        btnElement.textContent = 'Subscribed ✓';
+        btnElement.classList.add('subscribed');
+        
         alert(`Successfully subscribed to alerts for ${showName}!`);
       } catch (err) {
         console.error('Subscription error:', err);
         alert('Failed to subscribe.');
+        // Re-enable button if failed
+        btnElement.disabled = false;
+        btnElement.textContent = 'Subscribe Alerts';
       }
     }
 
@@ -284,6 +326,8 @@
         return;
       }
 
+      const subscribedShows = getSubscribedShows();
+
       results.forEach(item => {
         const title = item.title || item.name;
         const type = item.media_type === 'movie' ? 'Movie' : 'TV Show';
@@ -295,7 +339,13 @@
 
         let subButtonHTML = '';
         if (item.media_type === 'tv' || !item.media_type) {
-          subButtonHTML = `<button class="subscribe-btn" onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}')">Subscribe Alerts</button>`;
+          const isSubscribed = subscribedShows.includes(item.id.toString());
+          
+          if (isSubscribed) {
+            subButtonHTML = `<button class="subscribe-btn subscribed" disabled>Subscribed ✓</button>`;
+          } else {
+            subButtonHTML = `<button class="subscribe-btn" onclick="subscribeToAlerts('${item.id}', '${title.replace(/'/g, "\\'")}', this)">Subscribe Alerts</button>`;
+          }
         }
 
         card.innerHTML = `
