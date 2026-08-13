@@ -420,20 +420,26 @@
     <!-- MAIN EXPLORE GALLERY -->
     <div class="section-label">Explore Content</div>
     <div class="gallery" id="gallery">
-      <div class="empty-msg">Waking up the database...</div>
+      <div class="empty-msg">Loading content...</div>
     </div>
   </main>
 
   <script>
     const PARSE_APP_ID = 'gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq';
     const PARSE_JS_KEY = 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp';
-    const TMDB_KEY = '1070730380f5fee0d87cf0382670b255';
+    const TMDB_KEY = '1070730380f5fee0d87cf0382670b255'; // THIS KEY MUST BE VALID AND ACTIVE
     // IMPORTANT: Ensure this VAPID_PUBLIC_KEY is correctly generated and matches the one configured in your Parse server.
     // A mismatch or an invalid key will prevent push notifications from working.
     const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPgG7gcXOEYiFyNsz2Fh8'; 
 
-    Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
-    Parse.serverURL = 'https://parseapi.back4app.com/';
+    try {
+      Parse.initialize(PARSE_APP_ID, PARSE_JS_KEY);
+      Parse.serverURL = 'https://parseapi.back4app.com/';
+    } catch (e) {
+      console.error("Parse initialization failed:", e);
+      alert("Error: Parse initialization failed. Check your PARSE_APP_ID and PARSE_JS_KEY constants.");
+    }
+    
 
     let swReg = null;
     if ('serviceWorker' in navigator) {
@@ -480,6 +486,12 @@
       const section = document.getElementById('trackedSection');
       
       try {
+        // Ensure Parse is initialized before calling Cloud functions
+        if (!Parse.applicationId) {
+            console.error("Parse is not initialized. Cannot load dashboard.");
+            return;
+        }
+
         const subs = await Parse.Cloud.run('getRecentSubscriptions');
         if (!subs || subs.length === 0) {
           section.style.display = 'none';
@@ -491,6 +503,10 @@
 
         for (const show of subs) {
           const res = await fetch(`https://api.themoviedb.org/3/tv/${show.showId}?api_key=${TMDB_KEY}`);
+          if (!res.ok) {
+              console.error(`Failed to fetch TV details for ${show.showName} (ID: ${show.showId}):`, res.status, res.statusText);
+              continue; // Skip this show if fetching details failed
+          }
           const details = await res.json();
           
           const card = document.createElement('div');
@@ -601,15 +617,16 @@ Error: " + e.message);
       const gallery = document.getElementById('gallery');
       const localSubs = getLocalSubs();
       
-      gallery.innerHTML = '<div class="empty-msg">Searching content...</div>';
+      // Immediately set a loading message, which should be overwritten quickly
+      gallery.innerHTML = '<div class="empty-msg">Loading content...</div>';
       
       let results = [];
       let apiUrl = '';
 
       try {
-        if (!TMDB_KEY || TMDB_KEY === 'YOUR_TMDB_API_KEY') {
-            console.error("TMDB_KEY is not set or is a placeholder.");
-            gallery.innerHTML = '<div class="empty-msg">TMDB API Key is missing or invalid. Please check your `TMDB_KEY`.</div>';
+        if (!TMDB_KEY || TMDB_KEY === 'YOUR_TMDB_API_KEY' || TMDB_KEY.length !== 32) { // Basic check for key format
+            console.error("TMDB_KEY is not set or is a placeholder/invalid format.");
+            gallery.innerHTML = '<div class="empty-msg">TMDB API Key is missing or invalid. Please check your `TMDB_KEY` constant.</div>';
             return;
         }
 
@@ -635,15 +652,17 @@ Error: " + e.message);
         const res = await fetch(apiUrl);
         if (!res.ok) {
             console.error('TMDB API response not OK:', res.status, res.statusText);
-            const errorText = await res.text(); // Get more details from the response body
+            const errorText = await res.text(); 
             console.error('TMDB API Error Body:', errorText);
             let userMessage = `Error fetching data from TMDB. Status: ${res.status}.`;
             if (res.status === 401) {
-              userMessage += " This usually means your TMDB_KEY is invalid or expired.";
+              userMessage += " This usually means your TMDB_KEY is invalid or expired. Check it in the console.";
             } else if (res.status === 404) {
               userMessage += " The API endpoint might be incorrect.";
+            } else if (res.status === 429) {
+              userMessage += " You are sending too many requests to TMDB. Try again later.";
             }
-            gallery.innerHTML = `<div class="empty-msg">${userMessage} Please check your console for more details.</div>`;
+            gallery.innerHTML = `<div class="empty-msg">${userMessage}</div>`;
             return;
         }
 
@@ -660,7 +679,7 @@ Error: " + e.message);
             return;
         }
 
-        gallery.innerHTML = '';
+        gallery.innerHTML = ''; // Clear loading message for actual results
         results.forEach(item => {
           const isTV = item.media_type === 'tv' || (!item.media_type && item.first_air_date); 
           const name = item.name || item.title;
