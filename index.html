@@ -27,7 +27,7 @@
   <main class="container">
     <section class="controls-panel">
       <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search shows or movies..." onkeyup="handleSearch()" />
+        <input type="text" id="searchInput" placeholder="Search shows or movies..." oninput="handleSearch()" />
       </div>
 
       <div class="filter-group">
@@ -39,7 +39,7 @@
           <option value="Fantasy">Fantasy</option>
           <option value="Horror">Horror</option>
           <option value="Romance">Romance</option>
-          <option value="Sci-Fi">Sci-Fi / Science-Fiction</option>
+          <option value="Science-Fiction">Sci-Fi / Science-Fiction</option>
           <option value="Thriller">Thriller</option>
         </select>
 
@@ -51,6 +51,13 @@
 
     <!-- Dynamic Animated Grid Gallery -->
     <section id="gallery" class="gallery-grid"></section>
+
+    <!-- Pagination Controls -->
+    <section class="pagination">
+      <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>❮ Previous</button>
+      <span id="pageIndicator" class="page-indicator">Page 1</span>
+      <button id="nextBtn" class="page-btn" onclick="changePage(1)">Next ❯</button>
+    </section>
   </main>
 
   <script src="app.js"></script>
