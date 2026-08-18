@@ -107,6 +107,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1.5rem;
+  min-height: 400px;
 }
 
 /* Compact Animated Card */
@@ -118,7 +119,7 @@ body {
   display: flex;
   flex-direction: column;
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-  animation: fadeIn 0.5s ease forwards;
+  animation: fadeIn 0.4s ease forwards;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -131,7 +132,7 @@ body {
 .card-img-wrapper {
   position: relative;
   width: 100%;
-  padding-top: 150%; /* 2:3 Poster aspect ratio */
+  padding-top: 150%;
   overflow: hidden;
   background-color: #0f172a;
 }
@@ -194,6 +195,45 @@ body {
 
 .notify-btn.subscribed {
   background: #10b981;
+}
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.page-btn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #38bdf8;
+  padding: 0.6rem 1.4rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #64748b;
+}
+
+.page-indicator {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #94a3b8;
 }
 
 @keyframes fadeIn {
