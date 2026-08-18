@@ -2,367 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0d1117" />
-  <link rel="icon" href="./icon-512.png" type="image/png" />
-  <title>Liquid Glass Gallery</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineWave - Animated Media Gallery</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Parse JavaScript SDK -->
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
-
-  <style>
-    :root {
-      --glass: rgba(255, 255, 255, 0.08);
-      --border: rgba(255, 255, 255, 0.15);
-      --liquid: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.06) 100%);
-    }
-    
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: radial-gradient(circle at top, #1c1e2f, #0a0b10);
-      background-attachment: fixed;
-      color: #fff;
-      min-height: 100vh;
-    }
-
-    /* Glossy Condensation Framework */
-    .glossy {
-      position: relative;
-      background: var(--glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-      overflow: hidden;
-    }
-
-    .glossy::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: var(--liquid);
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    header {
-      position: sticky;
-      top: 0; z-index: 100;
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .brand { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; }
-
-    .controls { display: flex; gap: 10px; align-items: center; }
-
-    .toggle-wrap {
-      display: flex;
-      background: rgba(0,0,0,0.3);
-      padding: 4px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-
-    .toggle-btn {
-      padding: 8px 18px;
-      border: none;
-      background: transparent;
-      color: #777;
-      cursor: pointer;
-      font-weight: 700;
-      border-radius: 8px;
-      transition: 0.3s;
-    }
-
-    .toggle-btn.active { background: rgba(255,255,255,0.1); color: #fff; }
-
-    input, select {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      outline: none;
-    }
-
-    /* Recent Section */
-    .recent-section { padding: 20px 30px; max-width: 1400px; margin: 0 auto; }
-    .recent-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; }
-    .recent-scroll::-webkit-scrollbar { display: none; }
-
-    .recent-card {
-      min-width: 320px;
-      padding: 18px;
-      border-radius: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .recent-info .name { font-weight: 800; font-size: 1.05rem; display: block; color: #00d4ff; }
-    .recent-info .date-label { font-size: 0.75rem; color: #aaa; margin-top: 2px; display: block; }
-    .recent-info .ep-data { font-size: 0.72rem; color: #eee; margin-top: 8px; font-weight: 500; }
-
-    .delete-btn {
-      background: rgba(255, 60, 60, 0.15);
-      border: 1px solid rgba(255, 60, 60, 0.2);
-      color: #ff7070;
-      padding: 10px;
-      border-radius: 12px;
-      cursor: pointer;
-      z-index: 2;
-    }
-
-    /* Gallery */
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 30px;
-      padding: 30px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .card { border-radius: 24px; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    .card:hover { transform: translateY(-8px); }
-    .card img { width: 100%; height: 320px; object-fit: cover; border-bottom: 1px solid var(--border); }
-    .card-content { padding: 18px; }
-    .card-title { font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .sub-btn {
-      width: 100%; padding: 12px; border: none; border-radius: 12px;
-      background: linear-gradient(135deg, #0072ff, #00c6ff);
-      color: #fff; font-weight: 700; cursor: pointer;
-    }
-    .sub-btn.active { background: rgba(255,255,255,0.1); border: 1px solid var(--border); cursor: default; }
-
-    .pagination { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 40px; }
-    .page-btn { padding: 10px 25px; border-radius: 12px; border: 1px solid var(--border); background: var(--glass); color: #fff; cursor: pointer; font-weight: 700; backdrop-filter: blur(10px); }
-    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    .icon { width: 20px; height: 20px; fill: currentColor; }
-  </style>
 </head>
 <body>
 
-<header class="glossy">
-  <div class="brand">GLOSS</div>
-  <div class="controls">
-    <div class="toggle-wrap">
-      <button id="mBtn" class="toggle-btn" onclick="setMode('movie')">MOVIES</button>
-      <button id="tBtn" class="toggle-btn active" onclick="setMode('tv')">TV SHOWS</button>
+  <header class="navbar">
+    <div class="logo">🍿 CineWave</div>
+    <div class="tab-controls">
+      <button id="tabTv" class="tab-btn active" onclick="switchMediaType('tv')">TV Shows (TVmaze)</button>
+      <button id="tabMovie" class="tab-btn" onclick="switchMediaType('movie')">Movies (TMDB)</button>
     </div>
-    <input type="text" id="searchInput" placeholder="Instant Search..." oninput="triggerSearch(true)">
-    <select id="genreSelect" onchange="triggerSearch(true)"><option value="">Genres</option></select>
-    <select id="yearSelect" onchange="triggerSearch(true)"><option value="">Years</option></select>
-  </div>
-</header>
+  </header>
 
-<div class="recent-section">
-  <h3 style="margin-left: 10px; margin-bottom: 15px;">Recent Subscriptions</h3>
-  <div class="recent-scroll" id="recentContainer"></div>
-</div>
+  <main class="container">
+    <section class="controls-panel">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search shows or movies..." onkeyup="handleSearch()" />
+      </div>
 
-<div class="gallery" id="galleryContainer"></div>
+      <div class="filter-group">
+        <select id="genreSelect" onchange="applyFilters()">
+          <option value="">All Genres</option>
+          <option value="Action">Action</option>
+          <option value="Comedy">Comedy</option>
+          <option value="Drama">Drama</option>
+          <option value="Fantasy">Fantasy</option>
+          <option value="Horror">Horror</option>
+          <option value="Romance">Romance</option>
+          <option value="Sci-Fi">Sci-Fi / Science-Fiction</option>
+          <option value="Thriller">Thriller</option>
+        </select>
 
-<div class="pagination">
-  <button id="prevBtn" class="page-btn glossy" onclick="changePage(-1)">Previous</button>
-  <span id="pageIndicator" style="font-weight: 700;">Page 1</span>
-  <button id="nextBtn" class="page-btn glossy" onclick="changePage(1)">Next</button>
-</div>
+        <select id="yearSelect" onchange="applyFilters()">
+          <option value="">All Years</option>
+        </select>
+      </div>
+    </section>
 
-<script>
-  const TMDB_API = '1070730380f5fee0d87cf0382670b255';
-  Parse.initialize('gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq', 'bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp');
-  Parse.serverURL = 'https://parseapi.back4app.com/';
+    <!-- Dynamic Animated Grid Gallery -->
+    <section id="gallery" class="gallery-grid"></section>
+  </main>
 
-  let currentMode = 'tv', searchTimer = null;
-  let currentPage = 1, totalPages = 1;
-
-  // Standalone Check
-  function isInstalled() {
-    return (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true);
-  }
-
-  function setMode(m) {
-    currentMode = m;
-    document.getElementById('mBtn').classList.toggle('active', m === 'movie');
-    document.getElementById('tBtn').classList.toggle('active', m === 'tv');
-    currentPage = 1;
-    loadGenres();
-    performSearch();
-  }
-
-  function triggerSearch(resetPage = false) {
-    if (resetPage) currentPage = 1;
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(performSearch, 500);
-  }
-
-  function changePage(dir) {
-    currentPage += dir;
-    if (currentPage < 1) currentPage = 1;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    performSearch();
-  }
-
-  function fmtDate(d) {
-    if (!d) return 'N/A';
-    const date = new Date(d);
-    return `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`;
-  }
-
-  async function loadGenres() {
-    const r = await fetch(`https://api.themoviedb.org/3/genre/${currentMode}/list?api_key=${TMDB_API}`);
-    const d = await r.json();
-    const g = document.getElementById('genreSelect');
-    const currentVal = g.value;
-    g.innerHTML = '<option value="">All Genres</option>';
-    d.genres.forEach(item => { g.innerHTML += `<option value="${item.id}">${item.name}</option>`; });
-    g.value = currentVal;
-  }
-
-  async function performSearch() {
-    const q = document.getElementById('searchInput').value;
-    const g = document.getElementById('genreSelect').value;
-    const y = document.getElementById('yearSelect').value;
-    const container = document.getElementById('galleryContainer');
-    
-    let url = q 
-      ? `https://api.themoviedb.org/3/search/${currentMode}?api_key=${TMDB_API}&query=${encodeURIComponent(q)}&page=${currentPage}`
-      : `https://api.themoviedb.org/3/discover/${currentMode}?api_key=${TMDB_API}&sort_by=popularity.desc&page=${currentPage}`;
-    
-    if (y) url += currentMode === 'movie' ? `&primary_release_year=${y}` : `&first_air_date_year=${y}`;
-    if (!q && g) url += `&with_genres=${g}`;
-
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      totalPages = data.total_pages || 1;
-      
-      let results = data.results || [];
-      if (q && g) results = results.filter(i => i.genre_ids.includes(parseInt(g)));
-
-      container.innerHTML = '';
-      const localSubs = JSON.parse(localStorage.getItem('my_subs') || '[]');
-
-      results.forEach(item => {
-        const isSub = localSubs.includes(item.id.toString());
-        const card = document.createElement('div');
-        card.className = 'card glossy';
-        card.innerHTML = `
-          <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="poster" onerror="this.src='https://via.placeholder.com/500x750?text=No+Image'">
-          <div class="card-content">
-            <div class="card-title">${item.title || item.name}</div>
-            <button class="sub-btn ${isSub ? 'active' : ''}" onclick="subscribe('${item.id}', '${(item.title || item.name).replace(/'/g, "")}', this)" ${isSub ? 'disabled' : ''}>
-              ${isSub ? 'Subscribed ✓' : 'Subscribe Alerts'}
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      document.getElementById('pageIndicator').innerText = `Page ${currentPage} of ${totalPages}`;
-      document.getElementById('prevBtn').disabled = currentPage === 1;
-      document.getElementById('nextBtn').disabled = currentPage >= totalPages;
-
-    } catch(e) { container.innerHTML = 'Error loading results.'; }
-  }
-
-  async function subscribe(id, name, btn) {
-    if (!isInstalled()) {
-      alert("App must be added to Home Screen to subscribe.");
-      return;
-    }
-    try {
-      const sw = await navigator.serviceWorker.ready;
-      const pushSub = await sw.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array('BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8')
-      });
-      const Obj = Parse.Object.extend("PushSubscription");
-      const sub = new Obj();
-      sub.set("subscriptionObject", JSON.parse(JSON.stringify(pushSub)));
-      sub.set("showId", id.toString());
-      sub.set("showName", name);
-      await sub.save();
-      
-      let subs = JSON.parse(localStorage.getItem('my_subs') || '[]');
-      subs.push(id.toString());
-      localStorage.setItem('my_subs', JSON.stringify(subs));
-      btn.className = 'sub-btn active';
-      btn.textContent = 'Subscribed ✓';
-      loadRecents();
-    } catch(e) { alert("Push notification error. Check permissions."); }
-  }
-
-  async function loadRecents() {
-    const res = await Parse.Cloud.run('getRecentSubscriptions');
-    const container = document.getElementById('recentContainer');
-    container.innerHTML = '';
-    for (const s of res) {
-      let last = 'N/A', next = 'None';
-      try {
-        const r = await fetch(`https://api.themoviedb.org/3/tv/${s.showId}?api_key=${TMDB_API}`);
-        const d = await r.json();
-        last = fmtDate(d.last_air_date);
-        if(d.next_episode_to_air) next = fmtDate(d.next_episode_to_air.air_date);
-      } catch(e) {}
-
-      const div = document.createElement('div');
-      div.className = 'recent-card glossy';
-      div.innerHTML = `
-        <div class="recent-info">
-          <span class="name">${s.showName}</span>
-          <span class="date-label">Subscribed: ${fmtDate(s.date)}</span>
-          <div class="ep-data">Last: ${last} | Next: ${next}</div>
-        </div>
-        <button class="delete-btn" onclick="deleteSub('${s.showId}')">
-          <svg class="icon" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      `;
-      container.appendChild(div);
-    }
-  }
-
-  async function deleteSub(id) {
-    if (!isInstalled()) {
-      alert("App must be added to Home Screen to delete.");
-      return;
-    }
-    await Parse.Cloud.run('deleteSubscriptionByShowId', { showId: id });
-    let subs = JSON.parse(localStorage.getItem('my_subs') || '[]').filter(i => i !== id);
-    localStorage.setItem('my_subs', JSON.stringify(subs));
-    loadRecents();
-    performSearch();
-  }
-
-  function urlB64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-    return outputArray;
-  }
-
-  window.onload = () => {
-    const ys = document.getElementById('yearSelect');
-    for(let i=2027; i>=1960; i--) ys.innerHTML += `<option value="${i}">${i}</option>`;
-    loadGenres();
-    performSearch();
-    loadRecents();
-    if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-  };
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
