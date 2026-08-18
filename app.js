@@ -3,7 +3,7 @@ Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6q
 Parse.serverURL = "https://parseapi.back4app.com/";
 
 const TMDB_API_KEY = '1070730380f5fee0d87cf0382670b255';
-const VAPID_PUBLIC_KEY = 'BC-LY0azo2sZzvZ4ZoQnZwnpLpIwhrOFsDTQ9YbiuSdWLNqKQYdNGmMM9Am6IH-Zd9rBPg7gcXOEYiFyNsz2Fh8'; // Must match backend VAPID public key
+const VAPID_PUBLIC_KEY = 'BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E'; // Must match backend VAPID public key
 
 
 // Map TMDB genre IDs to human-readable string names for uniform client-side filtering
