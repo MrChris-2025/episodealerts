@@ -1,22 +1,29 @@
 self.addEventListener('push', function(event) {
-  let data = { title: 'New Alert', body: 'New content is available!' };
-  if (event.data) {
-    data = event.data.json();
-  }
+  if (!event.data) return;
+
+  const data = event.data.json();
+  const title = data.title || 'New Notification';
   const options = {
     body: data.body,
-    icon: './icon-512.png',
-    badge: './icon-512.png',
-    vibrate: [200, 100, 200]
+    icon: data.icon || '/icon-192x192.png',
+    data: data.data || {}
   };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(title, options)
   );
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  const showData = event.notification.data;
+
   event.waitUntil(
-    clients.openWindow('/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      if (clientList.length > 0) {
+        return clientList[0].focus();
+      }
+      return clients.openWindow(showData.url || '/');
+    })
   );
 });
