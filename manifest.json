@@ -1,24 +1,21 @@
 {
-  "short_name": "CineWave",
-  "name": "CineWave - Media Gallery & Push Alerts",
-  "description": "Dynamic animated movie and TV show gallery with TVmaze premiere push notifications.",
+  "short_name": "TV Alerts",
+  "name": "TV Show Episode Alerts",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228c0922bb4c1456c30d96d0c2e63eaf20f501171d3311800d3d52cb22.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
+      "sizes": "192x192"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228c0922bb4c1456c30d96d0c2e63eaf20f501171d3311800d3d52cb22.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "sizes": "512x512"
     }
   ],
   "start_url": "/",
-  "background_color": "#0f172a",
-  "theme_color": "#1e293b",
+  "background_color": "#0d253f",
+  "theme_color": "#0d253f",
   "display": "standalone",
   "orientation": "portrait"
 }
