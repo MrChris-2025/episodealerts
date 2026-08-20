@@ -1,6 +1,9 @@
 Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
 Parse.serverURL = "https://parseapi.back4app.com/";
 
+Parse.initialize("d1eje7SvxRjIFsdB6c3TuQLlF8v6zExAMBzChgXa", "eQqLLilvkNhy04m0OF5J4ry17vw0FKeeEHfPT2mq");
+Parse.serverURL = "https://parseapi.back4app.com/";
+
 const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
 const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
 
@@ -20,7 +23,8 @@ function urlBase64ToUint8Array(base64String) {
 document.addEventListener('DOMContentLoaded', async () => {
   await setupServiceWorker();
   setupUIEventListeners();
-  loadShows(); // Loads trending shows by default
+  await loadShows();
+  await loadRecentActivity();
 });
 
 async function setupServiceWorker() {
@@ -52,7 +56,7 @@ function setupUIEventListeners() {
     let debounceTimer;
     searchInput.addEventListener('input', (e) => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => loadShows(e.target.value), 500);
+      debounceTimer = setTimeout(() => loadShows(e.target.value), 400);
     });
   }
 }
@@ -68,6 +72,7 @@ async function subscribeUserToPush() {
     currentSubscription = sub;
     await saveSubscriptionToBack4App(sub);
     updateMainToggleUI(true);
+    await loadRecentActivity();
   } catch (err) {
     console.error('Failed to subscribe:', err);
     updateMainToggleUI(false);
@@ -80,6 +85,7 @@ async function unsubscribeUserFromPush() {
     await removeSubscriptionFromBack4App(currentSubscription);
     currentSubscription = null;
     updateMainToggleUI(false);
+    await loadRecentActivity();
   }
 }
 
@@ -94,7 +100,7 @@ async function saveSubscriptionToBack4App(sub) {
   }
   
   record.set("endpoint", sub.endpoint);
-  record.set("subscriptionJSON", JSON.stringify(sub));
+  record.set("keys", sub.toJSON().keys);
   await record.save();
 }
 
@@ -146,13 +152,16 @@ async function renderShows(shows) {
     const isSubscribed = activeShowSubs.includes(String(show.id));
     const posterUrl = show.poster_path 
       ? `https://image.tmdb.org/t/p/w92${show.poster_path}` 
-      : 'https://via.placeholder.com/92x138?text=No+Image';
+      : 'https://via.placeholder.com/92x138?text=No+Cover';
 
     return `
       <div class="card" data-show-id="${show.id}">
-        <div class="header">
-          <img src="${posterUrl}" alt="${show.name}" style="height: 50px; border-radius: 4px; margin-right: 10px;">
-          <span class="show-meta"><strong>${show.name}</strong></span>
+        <div class="card-content">
+          <img src="${posterUrl}" alt="${show.name}" class="poster">
+          <div class="info">
+            <strong>${show.name}</strong>
+            <span class="sub-text">${show.first_air_date ? 'Premiered: ' + show.first_air_date.split('-')[0] : ''}</span>
+          </div>
           <label class="switch">
             <input type="checkbox" class="show-toggle" data-show-id="${show.id}" ${isSubscribed ? 'checked' : ''}>
             <span class="slider"></span>
@@ -172,7 +181,7 @@ async function handleShowToggleChange(e) {
   const isChecked = e.target.checked;
 
   if (!currentSubscription) {
-    alert("Please enable Main Push Alerts first.");
+    alert("Please enable Master Push Alerts first.");
     e.target.checked = false;
     return;
   }
@@ -182,6 +191,8 @@ async function handleShowToggleChange(e) {
     showId: showId,
     enabled: isChecked
   });
+
+  await loadRecentActivity();
 }
 
 async function getActiveShowSubscriptions() {
@@ -190,5 +201,86 @@ async function getActiveShowSubscriptions() {
     return await Parse.Cloud.run("getUserShowSubscriptions", { endpoint: currentSubscription.endpoint });
   } catch {
     return [];
+  }
+}
+
+// Fetch & render subscribed shows in Recent Activity section with air dates
+async function loadRecentActivity() {
+  const container = document.getElementById('activity-container');
+  if (!container) return;
+
+  if (!currentSubscription) {
+    container.innerHTML = `<div class="card">Enable push alerts to see and manage tracked shows.</div>`;
+    return;
+  }
+
+  const subscribedIds = await getActiveShowSubscriptions();
+  if (subscribedIds.length === 0) {
+    container.innerHTML = `<div class="card">No active show subscriptions yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="card">Loading tracked shows...</div>`;
+
+  try {
+    const showPromises = subscribedIds.map(id => 
+      fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${TMDB_API_KEY}`).then(res => res.json())
+    );
+    const shows = await Promise.all(showPromises);
+
+    container.innerHTML = shows.map(show => {
+      const posterUrl = show.poster_path 
+        ? `https://image.tmdb.org/t/p/w92${show.poster_path}` 
+        : 'https://via.placeholder.com/92x138?text=No+Cover';
+
+      const lastAir = show.last_episode_to_air 
+        ? `S${show.last_episode_to_air.season_number}E${show.last_episode_to_air.episode_number} (${show.last_episode_to_air.air_date})` 
+        : 'N/A';
+
+      const nextAir = show.next_episode_to_air 
+        ? `S${show.next_episode_to_air.season_number}E${show.next_episode_to_air.episode_number} (${show.next_episode_to_air.air_date})` 
+        : 'TBA / Ended';
+
+      return `
+        <div class="activity-card" id="activity-card-${show.id}">
+          <img src="${posterUrl}" alt="${show.name}" class="poster">
+          <div class="activity-details">
+            <h3>${show.name}</h3>
+            <p><strong>Last Episode:</strong> ${lastAir}</p>
+            <p><strong>Next Episode:</strong> ${nextAir}</p>
+          </div>
+          <button class="delete-btn" onclick="deleteShowSubscription('${show.id}')">Delete</button>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading activity feed:', err);
+    container.innerHTML = `<div class="card">Error loading activity updates.</div>`;
+  }
+}
+
+// Delete subscription from frontend UI and backend Parse DB
+async function deleteShowSubscription(showId) {
+  if (!currentSubscription) return;
+
+  // Unsubscribe in backend
+  await Parse.Cloud.run("toggleShowSubscription", {
+    endpoint: currentSubscription.endpoint,
+    showId: String(showId),
+    enabled: false
+  });
+
+  // Remove card from UI DOM directly
+  const card = document.getElementById(`activity-card-${showId}`);
+  if (card) card.remove();
+
+  // Uncheck corresponding toggle if visible in search grid
+  const toggle = document.querySelector(`.show-toggle[data-show-id="${showId}"]`);
+  if (toggle) toggle.checked = false;
+
+  // Refresh empty state check
+  const activeSubs = await getActiveShowSubscriptions();
+  if (activeSubs.length === 0) {
+    document.getElementById('activity-container').innerHTML = `<div class="card">No active show subscriptions yet.</div>`;
   }
 }
