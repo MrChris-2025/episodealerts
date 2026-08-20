@@ -1,7 +1,7 @@
 Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
 Parse.serverURL = "https://parseapi.back4app.com/";
 
-ParseVAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
+const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNFoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
 const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
 
 let currentSubscription = null;
@@ -20,34 +20,33 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await setupServiceWorker();
   setupUIEventListeners();
+  await setupServiceWorker();
   await loadShows();
   await loadRecentActivity();
 });
 
 async function setupServiceWorker() {
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
-    try {
-      const reg = await navigator.serviceWorker.register('./sw.js');
-      currentSubscription = await reg.pushManager.getSubscription();
-      updateMainToggleUI(!!currentSubscription);
-    } catch (err) {
-      console.error('Service Worker registration failed:', err);
-    }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('Push notifications are not supported on this browser.');
+    return;
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js');
+    currentSubscription = await reg.pushManager.getSubscription();
+    updateMainToggleUI(!!currentSubscription);
+  } catch (err) {
+    console.error('Service Worker setup failed:', err);
+    updateMainToggleUI(false);
   }
 }
 
 function setupUIEventListeners() {
   const mainPushBtn = document.getElementById('main-push-btn');
   if (mainPushBtn) {
-    mainPushBtn.addEventListener('click', async () => {
-      if (currentSubscription) {
-        await unsubscribeUserFromPush();
-      } else {
-        await subscribeUserToPush();
-      }
-    });
+    // Attach click listener directly
+    mainPushBtn.addEventListener('click', handleMainPushClick);
   }
 
   const searchInput = document.getElementById('show-search');
@@ -61,21 +60,53 @@ function setupUIEventListeners() {
     });
   }
 
-  document.getElementById('prev-page-btn').addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      loadShows();
-    }
-  });
+  const prevBtn = document.getElementById('prev-page-btn');
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadShows();
+      }
+    };
+  }
 
-  document.getElementById('next-page-btn').addEventListener('click', () => {
-    currentPage++;
-    loadShows();
-  });
+  const nextBtn = document.getElementById('next-page-btn');
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      currentPage++;
+      loadShows();
+    };
+  }
+}
+
+async function handleMainPushClick(e) {
+  if (e) e.preventDefault();
+
+  // 1. Check network connectivity (Airplane mode check)
+  if (!navigator.onLine) {
+    alert("You appear to be offline or in Airplane Mode. Please reconnect to enable push alerts.");
+    return;
+  }
+
+  // 2. Toggle subscription
+  if (currentSubscription) {
+    await unsubscribeUserFromPush();
+  } else {
+    await subscribeUserToPush();
+  }
 }
 
 async function subscribeUserToPush() {
   try {
+    // Request permission explicitly for iOS / iPadOS Safari compatibility
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert("Notification permission was denied. Please allow notifications in your iPad Settings > Safari / App Settings.");
+        return;
+      }
+    }
+
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -85,22 +116,29 @@ async function subscribeUserToPush() {
     currentSubscription = sub;
     await saveSubscriptionToBack4App(sub);
     updateMainToggleUI(true);
+    
     await loadShows();
     await loadRecentActivity();
   } catch (err) {
     console.error('Failed to subscribe:', err);
+    alert(`Could not enable notifications: ${err.message || err}`);
     updateMainToggleUI(false);
   }
 }
 
 async function unsubscribeUserFromPush() {
-  if (currentSubscription) {
+  if (!currentSubscription) return;
+
+  try {
     await currentSubscription.unsubscribe();
     await removeSubscriptionFromBack4App(currentSubscription);
     currentSubscription = null;
     updateMainToggleUI(false);
     await loadShows();
     await loadRecentActivity();
+  } catch (err) {
+    console.error('Failed to unsubscribe:', err);
+    alert(`Could not disable notifications: ${err.message || err}`);
   }
 }
 
@@ -132,6 +170,8 @@ async function removeSubscriptionFromBack4App(sub) {
 function updateMainToggleUI(isEnabled) {
   const bellIcon = document.getElementById('main-bell-icon');
   const statusText = document.getElementById('main-push-status');
+  if (!bellIcon || !statusText) return;
+
   if (isEnabled) {
     bellIcon.classList.remove('text-slate-400');
     bellIcon.classList.add('text-blue-400', 'fill-blue-400/20');
@@ -156,9 +196,13 @@ async function loadShows() {
     const data = await res.json();
     renderShows(data.results || []);
     
-    document.getElementById('page-indicator').textContent = `Page ${data.page || 1} of ${data.total_pages || 1}`;
-    document.getElementById('prev-page-btn').disabled = currentPage <= 1;
-    document.getElementById('next-page-btn').disabled = currentPage >= (data.total_pages || 1);
+    const pageIndicator = document.getElementById('page-indicator');
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+
+    if (pageIndicator) pageIndicator.textContent = `Page ${data.page || 1} of ${data.total_pages || 1}`;
+    if (prevBtn) prevBtn.disabled = currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = currentPage >= (data.total_pages || 1);
   } catch (err) {
     console.error('Error fetching TMDB shows:', err);
     if (container) container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 glass-card rounded-2xl">Failed to load catalog.</div>`;
@@ -187,7 +231,6 @@ async function renderShows(shows) {
         <div class="aspect-[2/3] w-full overflow-hidden bg-slate-900 relative">
           <img src="${posterUrl}" alt="${show.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
           
-          <!-- Card Heroicon Alert Bell Button -->
           <button 
             onclick="toggleAlert('${show.id}', ${!isSubscribed})" 
             class="absolute top-3 right-3 p-2.5 rounded-full glass-panel transition-all ${
@@ -276,7 +319,6 @@ async function loadRecentActivity() {
             <p class="text-xs text-slate-300"><strong>Last:</strong> ${lastAir}</p>
             <p class="text-xs text-slate-300"><strong>Next:</strong> ${nextAir}</p>
           </div>
-          <!-- Delete Subscription Button -->
           <button onclick="deleteShowSubscription('${show.id}')" class="p-2 text-slate-400 hover:text-red-400 transition" title="Delete">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
