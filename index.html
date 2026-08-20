@@ -1,65 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CineWave - Animated Media Gallery</title>
-  
-  <!-- Web App Manifest & Theme -->
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#1e293b" />
-  <link rel="apple-touch-icon" href="/icon-192x192.png" />
-
-  <link rel="stylesheet" href="styles.css" />
-  <!-- Parse JavaScript SDK -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV Show Episode Alerts</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d253f">
+  <link rel="stylesheet" href="style.css">
   <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
 </head>
 <body>
-
-  <header class="navbar">
-    <div class="logo">🍿 CineWave</div>
-    <div class="tab-controls">
-      <button id="tabTv" class="tab-btn active" onclick="switchMediaType('tv')">TV Shows (TVmaze)</button>
-      <button id="tabMovie" class="tab-btn" onclick="switchMediaType('movie')">Movies (TMDB)</button>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="controls-panel">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search shows or movies..." oninput="handleSearch()" />
+  <div class="container">
+    <header>
+      <h1>📺 TV Episode Alerts</h1>
+      <div class="toggle-wrapper">
+        <span>Master Push Alerts</span>
+        <label class="switch">
+          <input type="checkbox" id="main-push-toggle">
+          <span class="slider"></span>
+        </label>
       </div>
+    </header>
 
-      <div class="filter-group">
-        <select id="genreSelect" onchange="applyFilters()">
-          <option value="">All Genres</option>
-          <option value="Action">Action</option>
-          <option value="Comedy">Comedy</option>
-          <option value="Drama">Drama</option>
-          <option value="Fantasy">Fantasy</option>
-          <option value="Horror">Horror</option>
-          <option value="Romance">Romance</option>
-          <option value="Science-Fiction">Sci-Fi / Science-Fiction</option>
-          <option value="Thriller">Thriller</option>
-        </select>
+    <!-- Show Search Section -->
+    <section class="search-section">
+      <input type="text" id="show-search" placeholder="Search TV shows (e.g., Breaking Bad, Severance)...">
+    </section>
 
-        <select id="yearSelect" onchange="applyFilters()">
-          <option value="">All Years</option>
-        </select>
+    <!-- Shows Search Results / Trending -->
+    <section class="shows-section">
+      <h2>Browse & Subscribe</h2>
+      <div id="shows-container" class="cards-grid">
+        <div class="card">Loading shows...</div>
       </div>
     </section>
 
-    <!-- Dynamic Animated Grid Gallery -->
-    <section id="gallery" class="gallery-grid"></section>
-
-    <!-- Pagination Controls -->
-    <section class="pagination">
-      <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>❮ Previous</button>
-      <span id="pageIndicator" class="page-indicator">Page 1</span>
-      <button id="nextBtn" class="page-btn" onclick="changePage(1)">Next ❯</button>
+    <!-- Backend Recent Activity Feed -->
+    <section class="activity-section">
+      <h2>Recent Activity & Subscriptions</h2>
+      <div id="activity-container" class="activity-grid">
+        <div class="card">Loading activity...</div>
+      </div>
     </section>
-  </main>
+  </div>
 
-  <script src="app.js"></script>
+  <script src="index.js"></script>
 </body>
 </html>
