@@ -1,18 +1,25 @@
 Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
 Parse.serverURL = "https://parseapi.back4app.com/";
 
-const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNFoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
+// Kept your exact VAPID Public Key
+const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
 const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
 
 let currentSubscription = null;
 let currentPage = 1;
 let currentSearchQuery = '';
 
+// Safari/iPadOS compatible Base64 to Uint8Array decoder
 function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  // Safari strict padding fix
+  let base64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4 !== 0) {
+    base64 += '=';
+  }
+
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
+
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
@@ -45,7 +52,6 @@ async function setupServiceWorker() {
 function setupUIEventListeners() {
   const mainPushBtn = document.getElementById('main-push-btn');
   if (mainPushBtn) {
-    // Attach click listener directly
     mainPushBtn.addEventListener('click', handleMainPushClick);
   }
 
@@ -82,13 +88,11 @@ function setupUIEventListeners() {
 async function handleMainPushClick(e) {
   if (e) e.preventDefault();
 
-  // 1. Check network connectivity (Airplane mode check)
   if (!navigator.onLine) {
     alert("You appear to be offline or in Airplane Mode. Please reconnect to enable push alerts.");
     return;
   }
 
-  // 2. Toggle subscription
   if (currentSubscription) {
     await unsubscribeUserFromPush();
   } else {
@@ -98,19 +102,20 @@ async function handleMainPushClick(e) {
 
 async function subscribeUserToPush() {
   try {
-    // Request permission explicitly for iOS / iPadOS Safari compatibility
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        alert("Notification permission was denied. Please allow notifications in your iPad Settings > Safari / App Settings.");
+        alert("Notification permission was denied. Please allow notifications in iPad Settings > Safari.");
         return;
       }
     }
 
     const reg = await navigator.serviceWorker.ready;
+    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      applicationServerKey: applicationServerKey
     });
     
     currentSubscription = sub;
