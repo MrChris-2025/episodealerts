@@ -1,160 +1,194 @@
-const webpush = require('web-push');
-const axios = require('axios');
+Parse.initialize("d1eje7SvxRjIFsdB6c3TuQLlF8v6zExAMBzChgXa", "eQqLLilvkNhy04m0OF5J4ry17vw0FKeeEHfPT2mq");
+Parse.serverURL = "https://parseapi.back4app.com/";
 
-webpush.setVapidDetails(
-  'mailto:holdenafart@protonmail.com',
-  'BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E',
-  '_fln9kijPK_iYpMTVxPqxDGiIvKZubWZIt_bSi2qBt8'
-);
+const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
+const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
 
-const SPORT_ENDPOINTS = [
-  { key: 'mlb', name: 'MLB', url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard' },
-  { key: 'nba', name: 'NBA', url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard' },
-  { key: 'nfl', name: 'NFL', url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' },
-  { key: 'nhl', name: 'NHL', url: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard' },
-  { key: 'soccer', name: 'Soccer', url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard' },
-  { key: 'mma', name: 'MMA', url: 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard' }
-];
+let currentSubscription = null;
 
-Parse.Cloud.define('saveSubscription', async (request) => {
-  const { subscription, gameIds } = request.params;
-  
-  if (!subscription || !subscription.endpoint) {
-    throw new Parse.Error(400, 'Invalid subscription object.');
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
   }
+  return outputArray;
+}
 
-  const SubscriptionClass = Parse.Object.extend('PushSubscription');
-  const query = new Parse.Query(SubscriptionClass);
-  query.equalTo('endpoint', subscription.endpoint);
-  let subObj = await query.first({ useMasterKey: true });
-
-  if (!subObj) {
-    subObj = new SubscriptionClass();
-  }
-
-  subObj.set('endpoint', subscription.endpoint);
-  subObj.set('keys', subscription.keys);
-  subObj.set('subscribedGames', Array.isArray(gameIds) ? gameIds : []);
-  
-  await subObj.save(null, { useMasterKey: true });
-  return { success: true, count: gameIds ? gameIds.length : 0 };
+document.addEventListener('DOMContentLoaded', async () => {
+  await setupServiceWorker();
+  setupUIEventListeners();
+  loadShows(); // Loads trending shows by default
 });
 
-Parse.Cloud.define('sendTestPush', async (request) => {
-  const query = new Parse.Query('PushSubscription');
-  const subscriptions = await query.find({ useMasterKey: true });
-
-  if (subscriptions.length === 0) {
-    return { status: 'No subscriptions found in database' };
-  }
-
-  const payload = JSON.stringify({
-    title: 'Test Notification',
-    body: 'If you see this, push notifications are working on your iPad!',
-    data: { url: '/' }
-  });
-
-  for (const subDoc of subscriptions) {
-    const pushSub = {
-      endpoint: subDoc.get('endpoint'),
-      keys: subDoc.get('keys')
-    };
+async function setupServiceWorker() {
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
     try {
-      await webpush.sendNotification(pushSub, payload);
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      currentSubscription = await reg.pushManager.getSubscription();
+      updateMainToggleUI(!!currentSubscription);
     } catch (err) {
-      console.error('Push error:', err);
+      console.error('Service Worker registration failed:', err);
     }
   }
+}
 
-  return { status: 'Sent push to ' + subscriptions.length + ' device(s)' };
-});
-
-Parse.Cloud.define('checkScores', async (request) => {
-  const GameState = Parse.Object.extend('GameState');
-  let checked = 0;
-
-  for (const sport of SPORT_ENDPOINTS) {
-    try {
-      const res = await axios.get(sport.url);
-      const events = res.data.events || [];
-      checked += events.length;
-
-      for (const event of events) {
-        const gameId = String(event.id);
-        const comp = event.competitions[0];
-        const competitors = comp.competitors || [];
-        if (competitors.length < 2) continue;
-
-        const home = competitors.find(c => c.homeAway === 'home') || competitors[0];
-        const away = competitors.find(c => c.homeAway === 'away') || competitors[1];
-
-        const homeScore = parseInt(home.score || '0', 10);
-        const awayScore = parseInt(away.score || '0', 10);
-        const status = event.status.type.state;
-
-        const query = new Parse.Query(GameState);
-        query.equalTo('gameId', gameId);
-        let gameState = await query.first({ useMasterKey: true });
-
-        if (!gameState) {
-          gameState = new GameState();
-          gameState.set('gameId', gameId);
-          gameState.set('sport', sport.key);
-          gameState.set('homeScore', homeScore);
-          gameState.set('awayScore', awayScore);
-          gameState.set('status', status);
-          await gameState.save(null, { useMasterKey: true });
-          continue;
-        }
-
-        const pHome = gameState.get('homeScore');
-        const pAway = gameState.get('awayScore');
-
-        if (status === 'in' && (homeScore !== pHome || awayScore !== pAway)) {
-          const hName = home.team?.shortDisplayName || 'Home';
-          const aName = away.team?.shortDisplayName || 'Away';
-          
-          await sendPush(gameId, `[${sport.name}] ${aName} @ ${hName}`, `${aName}: ${awayScore} | ${hName}: ${homeScore}`);
-
-          gameState.set('homeScore', homeScore);
-          gameState.set('awayScore', awayScore);
-          gameState.set('status', status);
-          await gameState.save(null, { useMasterKey: true });
-        }
+function setupUIEventListeners() {
+  const mainToggle = document.getElementById('main-push-toggle');
+  if (mainToggle) {
+    mainToggle.addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        await subscribeUserToPush();
+      } else {
+        await unsubscribeUserFromPush();
       }
-    } catch (e) {
-      console.error(e.message);
-    }
+    });
   }
 
-  return { status: 'ok', gamesChecked: checked };
-});
+  const searchInput = document.getElementById('show-search');
+  if (searchInput) {
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadShows(e.target.value), 500);
+    });
+  }
+}
 
-async function sendPush(gameId, title, body) {
-  const query = new Parse.Query('PushSubscription');
-  const subscriptions = await query.find({ useMasterKey: true });
+async function subscribeUserToPush() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    
+    currentSubscription = sub;
+    await saveSubscriptionToBack4App(sub);
+    updateMainToggleUI(true);
+  } catch (err) {
+    console.error('Failed to subscribe:', err);
+    updateMainToggleUI(false);
+  }
+}
 
-  const payload = JSON.stringify({
-    title: title,
-    body: body,
-    icon: 'https://a.espncdn.com/i/espn/espn_logos/espn_red.png'
+async function unsubscribeUserFromPush() {
+  if (currentSubscription) {
+    await currentSubscription.unsubscribe();
+    await removeSubscriptionFromBack4App(currentSubscription);
+    currentSubscription = null;
+    updateMainToggleUI(false);
+  }
+}
+
+async function saveSubscriptionToBack4App(sub) {
+  const PushSub = Parse.Object.extend("PushSubscription");
+  const query = new Parse.Query(PushSub);
+  query.equalTo("endpoint", sub.endpoint);
+  let record = await query.first();
+  
+  if (!record) {
+    record = new PushSub();
+  }
+  
+  record.set("endpoint", sub.endpoint);
+  record.set("subscriptionJSON", JSON.stringify(sub));
+  await record.save();
+}
+
+async function removeSubscriptionFromBack4App(sub) {
+  const PushSub = Parse.Object.extend("PushSubscription");
+  const query = new Parse.Query(PushSub);
+  query.equalTo("endpoint", sub.endpoint);
+  const record = await query.first();
+  if (record) {
+    await record.destroy();
+  }
+}
+
+function updateMainToggleUI(isEnabled) {
+  const mainToggle = document.getElementById('main-push-toggle');
+  if (mainToggle) mainToggle.checked = isEnabled;
+}
+
+async function loadShows(searchQuery = '') {
+  const container = document.getElementById('shows-container');
+  let url = `https://api.themoviedb.org/3/trending/tv/day?api_key=${TMDB_API_KEY}`;
+  
+  if (searchQuery.trim().length > 0) {
+    url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchQuery)}`;
+  }
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    renderShows(data.results || []);
+  } catch (err) {
+    console.error('Error fetching TMDB shows:', err);
+    if (container) container.innerHTML = `<div class="card">Failed to load shows.</div>`;
+  }
+}
+
+async function renderShows(shows) {
+  const container = document.getElementById('shows-container');
+  if (!container) return;
+
+  if (shows.length === 0) {
+    container.innerHTML = `<div class="card">No shows found.</div>`;
+    return;
+  }
+  
+  const activeShowSubs = await getActiveShowSubscriptions();
+
+  container.innerHTML = shows.map(show => {
+    const isSubscribed = activeShowSubs.includes(String(show.id));
+    const posterUrl = show.poster_path 
+      ? `https://image.tmdb.org/t/p/w92${show.poster_path}` 
+      : 'https://via.placeholder.com/92x138?text=No+Image';
+
+    return `
+      <div class="card" data-show-id="${show.id}">
+        <div class="header">
+          <img src="${posterUrl}" alt="${show.name}" style="height: 50px; border-radius: 4px; margin-right: 10px;">
+          <span class="show-meta"><strong>${show.name}</strong></span>
+          <label class="switch">
+            <input type="checkbox" class="show-toggle" data-show-id="${show.id}" ${isSubscribed ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.show-toggle').forEach(toggle => {
+    toggle.addEventListener('change', handleShowToggleChange);
   });
+}
 
-  for (const subDoc of subscriptions) {
-    const games = subDoc.get('subscribedGames') || [];
-    if (games.length > 0 && !games.includes(String(gameId))) continue;
+async function handleShowToggleChange(e) {
+  const showId = String(e.target.dataset.showId);
+  const isChecked = e.target.checked;
 
-    const pushSub = {
-      endpoint: subDoc.get('endpoint'),
-      keys: subDoc.get('keys')
-    };
+  if (!currentSubscription) {
+    alert("Please enable Main Push Alerts first.");
+    e.target.checked = false;
+    return;
+  }
 
-    try {
-      await webpush.sendNotification(pushSub, payload);
-    } catch (err) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        await subDoc.destroy({ useMasterKey: true });
-      }
-    }
+  await Parse.Cloud.run("toggleShowSubscription", {
+    endpoint: currentSubscription.endpoint,
+    showId: showId,
+    enabled: isChecked
+  });
+}
+
+async function getActiveShowSubscriptions() {
+  if (!currentSubscription) return [];
+  try {
+    return await Parse.Cloud.run("getUserShowSubscriptions", { endpoint: currentSubscription.endpoint });
+  } catch {
+    return [];
   }
 }
