@@ -1,4 +1,4 @@
-Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "uEHGKXx48dXVvPC8kKrG0Om0eDIB0e1YOm52J0Ng");
+Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "PPMX2XRR94hxPbcbhrQ3YruUYe6dP8AVeLZ8Oofh");
 Parse.serverURL = "https://parseapi.back4app.com/";
 
 const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E=";
