@@ -1,25 +1,20 @@
 Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
 Parse.serverURL = "https://parseapi.back4app.com/";
 
-// Kept your exact VAPID Public Key
-const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E";
+const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E=";
 const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
 
 let currentSubscription = null;
 let currentPage = 1;
 let currentSearchQuery = '';
 
-// Safari/iPadOS compatible Base64 to Uint8Array decoder
 function urlBase64ToUint8Array(base64String) {
-  // Safari strict padding fix
   let base64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
   while (base64.length % 4 !== 0) {
     base64 += '=';
   }
-
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
-
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
@@ -199,7 +194,7 @@ async function loadShows() {
   try {
     const res = await fetch(url);
     const data = await res.json();
-    renderShows(data.results || []);
+    await renderShows(data.results || []);
     
     const pageIndicator = document.getElementById('page-indicator');
     const prevBtn = document.getElementById('prev-page-btn');
@@ -237,7 +232,7 @@ async function renderShows(shows) {
           <img src="${posterUrl}" alt="${show.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
           
           <button 
-            onclick="toggleAlert('${show.id}', ${!isSubscribed})" 
+            onclick="window.toggleAlert('${show.id}', ${!isSubscribed})" 
             class="absolute top-3 right-3 p-2.5 rounded-full glass-panel transition-all ${
               isSubscribed ? 'bg-blue-600/80 text-white border-blue-400' : 'text-slate-300 hover:text-white'
             }"
@@ -257,21 +252,26 @@ async function renderShows(shows) {
   }).join('');
 }
 
-async function toggleAlert(showId, enable) {
+window.toggleAlert = async function(showId, enable) {
   if (!currentSubscription) {
     alert("Please enable Master Push Alerts first.");
     return;
   }
 
-  await Parse.Cloud.run("toggleShowSubscription", {
-    endpoint: currentSubscription.endpoint,
-    showId: String(showId),
-    enabled: enable
-  });
+  try {
+    await Parse.Cloud.run("toggleShowSubscription", {
+      endpoint: currentSubscription.endpoint,
+      showId: String(showId),
+      enabled: enable
+    });
 
-  await loadShows();
-  await loadRecentActivity();
-}
+    await loadShows();
+    await loadRecentActivity();
+  } catch (err) {
+    console.error("Error toggling alert:", err);
+    alert(`Could not update alert: ${err.message || err}`);
+  }
+};
 
 async function getActiveShowSubscriptions() {
   if (!currentSubscription) return [];
@@ -324,7 +324,7 @@ async function loadRecentActivity() {
             <p class="text-xs text-slate-300"><strong>Last:</strong> ${lastAir}</p>
             <p class="text-xs text-slate-300"><strong>Next:</strong> ${nextAir}</p>
           </div>
-          <button onclick="deleteShowSubscription('${show.id}')" class="p-2 text-slate-400 hover:text-red-400 transition" title="Delete">
+          <button onclick="window.deleteShowSubscription('${show.id}')" class="p-2 text-slate-400 hover:text-red-400 transition" title="Delete">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
             </svg>
@@ -337,15 +337,19 @@ async function loadRecentActivity() {
   }
 }
 
-async function deleteShowSubscription(showId) {
+window.deleteShowSubscription = async function(showId) {
   if (!currentSubscription) return;
 
-  await Parse.Cloud.run("toggleShowSubscription", {
-    endpoint: currentSubscription.endpoint,
-    showId: String(showId),
-    enabled: false
-  });
+  try {
+    await Parse.Cloud.run("toggleShowSubscription", {
+      endpoint: currentSubscription.endpoint,
+      showId: String(showId),
+      enabled: false
+    });
 
-  await loadShows();
-  await loadRecentActivity();
-}
+    await loadShows();
+    await loadRecentActivity();
+  } catch (err) {
+    console.error("Error deleting subscription:", err);
+  }
+};
