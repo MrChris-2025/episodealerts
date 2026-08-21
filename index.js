@@ -1,5 +1,7 @@
-Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "ipjLDd26gBZ7aDRPQm9B1P0hrpFKXqISeTFnVX8v");
+// Parse.initialize("YOUR_APP_ID", "YOUR_JAVASCRIPT_KEY");
+Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
 Parse.serverURL = "https://parseapi.back4app.com/";
+
 
 const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E=";
 const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
