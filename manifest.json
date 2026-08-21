@@ -3,12 +3,12 @@
   "name": "TV Show Episode Alerts",
   "icons": [
     {
-      "src": "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228c0922bb4c1456c30d96d0c2e63eaf20f501171d3311800d3d52cb22.png",
+      "src": "tv.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228c0922bb4c1456c30d96d0c2e63eaf20f501171d3311800d3d52cb22.png",
+      "src": "tv.png",
       "type": "image/png",
       "sizes": "512x512"
     }
