@@ -1,355 +1,167 @@
-Parse.initialize("gH0Ry12pUmKdlIWwjbDtN5T8lCkoZnfD6Xp9rvoq", "bSh7EVVqy3oQMUup6qDZQBVax28RmVeGgE92tMlp");
-Parse.serverURL = "https://parseapi.back4app.com/";
+const webpush = require('web-push');
+const axios = require('axios');
 
-const VAPID_PUBLIC_KEY = "BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E=";
-const TMDB_API_KEY = "1070730380f5fee0d87cf0382670b255";
+const TMDB_API_KEY = '1070730380f5fee0d87cf0382670b255';
 
-let currentSubscription = null;
-let currentPage = 1;
-let currentSearchQuery = '';
+// Added '=' padding so Web-Push decodes the P-256 public key properly
+webpush.setVapidDetails(
+  'mailto:holdenafart@protonmail.com',
+  'BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E=',
+  '_fln9kijPK_iYpMTVxPqxDGiIvKZubWZIt_bSi2qBt8'
+);
 
-function urlBase64ToUint8Array(base64String) {
-  let base64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64.length % 4 !== 0) {
-    base64 += '=';
+Parse.Cloud.define('saveSubscription', async (request) => {
+  const { subscription, showIds } = request.params;
+  
+  if (!subscription || !subscription.endpoint) {
+    throw new Parse.Error(400, 'Invalid subscription object.');
   }
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
 
-document.addEventListener('DOMContentLoaded', async () => {
-  setupUIEventListeners();
-  await setupServiceWorker();
-  await loadShows();
-  await loadRecentActivity();
+  const SubscriptionClass = Parse.Object.extend('PushSubscription');
+  const query = new Parse.Query(SubscriptionClass);
+  query.equalTo('endpoint', subscription.endpoint);
+  let subObj = await query.first({ useMasterKey: true });
+
+  if (!subObj) {
+    subObj = new SubscriptionClass();
+  }
+
+  subObj.set('endpoint', subscription.endpoint);
+  subObj.set('keys', subscription.keys);
+  subObj.set('subscribedShows', Array.isArray(showIds) ? showIds : []);
+  
+  await subObj.save(null, { useMasterKey: true });
+  return { success: true, count: showIds ? showIds.length : 0 };
 });
 
-async function setupServiceWorker() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('Push notifications are not supported on this browser.');
-    return;
+Parse.Cloud.define('toggleShowSubscription', async (request) => {
+  const { endpoint, showId, enabled } = request.params;
+  
+  const query = new Parse.Query('PushSubscription');
+  query.equalTo('endpoint', endpoint);
+  let subObj = await query.first({ useMasterKey: true });
+
+  if (!subObj) {
+    throw new Parse.Error(404, 'Subscription record not found.');
   }
 
-  try {
-    const reg = await navigator.serviceWorker.register('./sw.js');
-    currentSubscription = await reg.pushManager.getSubscription();
-    updateMainToggleUI(!!currentSubscription);
-  } catch (err) {
-    console.error('Service Worker setup failed:', err);
-    updateMainToggleUI(false);
-  }
-}
+  let shows = subObj.get('subscribedShows') || [];
+  const idStr = String(showId);
 
-function setupUIEventListeners() {
-  const mainPushBtn = document.getElementById('main-push-btn');
-  if (mainPushBtn) {
-    mainPushBtn.addEventListener('click', handleMainPushClick);
+  if (enabled && !shows.includes(idStr)) {
+    shows.push(idStr);
+  } else if (!enabled) {
+    shows = shows.filter(id => id !== idStr);
   }
 
-  const searchInput = document.getElementById('show-search');
-  if (searchInput) {
-    let debounceTimer;
-    searchInput.addEventListener('input', (e) => {
-      clearTimeout(debounceTimer);
-      currentPage = 1;
-      currentSearchQuery = e.target.value;
-      debounceTimer = setTimeout(() => loadShows(), 400);
-    });
-  }
+  subObj.set('subscribedShows', shows);
+  await subObj.save(null, { useMasterKey: true });
+  return { success: true, subscribedShows: shows };
+});
 
-  const prevBtn = document.getElementById('prev-page-btn');
-  if (prevBtn) {
-    prevBtn.onclick = () => {
-      if (currentPage > 1) {
-        currentPage--;
-        loadShows();
+Parse.Cloud.define('getUserShowSubscriptions', async (request) => {
+  const { endpoint } = request.params;
+  
+  const query = new Parse.Query('PushSubscription');
+  query.equalTo('endpoint', endpoint);
+  const subObj = await query.first({ useMasterKey: true });
+
+  return subObj ? subObj.get('subscribedShows') || [] : [];
+});
+
+// Alias both function names so QStash works regardless of endpoint path
+const runEpisodeCheck = async (request) => {
+  const EpisodeState = Parse.Object.extend('EpisodeState');
+  const subQuery = new Parse.Query('PushSubscription');
+  const subscriptions = await subQuery.find({ useMasterKey: true });
+
+  const showIdsSet = new Set();
+  subscriptions.forEach(sub => {
+    const shows = sub.get('subscribedShows') || [];
+    shows.forEach(id => showIdsSet.add(String(id)));
+  });
+
+  const uniqueShowIds = Array.from(showIdsSet);
+  let checked = 0;
+
+  // Build current date string and yesterday/tomorrow windows to catch timezone offsets
+  const now = new Date();
+  const datesToCheck = [
+    now.toISOString().split('T')[0],
+    new Date(now.getTime() - 86400000).toISOString().split('T')[0],
+    new Date(now.getTime() + 86400000).toISOString().split('T')[0]
+  ];
+
+  for (const showId of uniqueShowIds) {
+    try {
+      const res = await axios.get(`https://api.themoviedb.org/3/tv/${showId}?api_key=${TMDB_API_KEY}`);
+      const show = res.data;
+      const nextEp = show.next_episode_to_air;
+      checked++;
+
+      if (!nextEp || !nextEp.air_date) continue;
+
+      // Check if episode air_date falls within the target date window
+      if (datesToCheck.includes(nextEp.air_date)) {
+        const episodeKey = `${showId}_S${nextEp.season_number}E${nextEp.episode_number}`;
+
+        const stateQuery = new Parse.Query(EpisodeState);
+        stateQuery.equalTo('episodeKey', episodeKey);
+        let epState = await stateQuery.first({ useMasterKey: true });
+
+        if (!epState) {
+          const title = `New Episode: ${show.name}`;
+          const body = `S${nextEp.season_number}E${nextEp.episode_number} - "${nextEp.name}" airs today!`;
+          const poster = show.poster_path 
+            ? `https://image.tmdb.org/t/p/w185${show.poster_path}` 
+            : null;
+
+          await sendPush(showId, title, body, poster);
+
+          epState = new EpisodeState();
+          epState.set('episodeKey', episodeKey);
+          epState.set('showId', String(showId));
+          epState.set('notifiedDate', nextEp.air_date);
+          await epState.save(null, { useMasterKey: true });
+        }
       }
+    } catch (e) {
+      console.error(`Error checking show ID ${showId}:`, e.message);
+    }
+  }
+
+  return { status: 'ok', showsChecked: checked };
+};
+
+// Register under both function names to fix QStash errors
+Parse.Cloud.define('checkEpisodes', runEpisodeCheck);
+Parse.Cloud.define('checkNewEpisodes', runEpisodeCheck);
+
+async function sendPush(showId, title, body, iconUrl) {
+  const query = new Parse.Query('PushSubscription');
+  const subscriptions = await query.find({ useMasterKey: true });
+
+  const payload = JSON.stringify({
+    title: title,
+    body: body,
+    icon: iconUrl || 'https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228c0922bb4c1456c30d96d0c2e63eaf20f501171d3311800d3d52cb22.png'
+  });
+
+  for (const subDoc of subscriptions) {
+    const shows = subDoc.get('subscribedShows') || [];
+    if (shows.length > 0 && !shows.includes(String(showId))) continue;
+
+    const pushSub = {
+      endpoint: subDoc.get('endpoint'),
+      keys: subDoc.get('keys')
     };
-  }
 
-  const nextBtn = document.getElementById('next-page-btn');
-  if (nextBtn) {
-    nextBtn.onclick = () => {
-      currentPage++;
-      loadShows();
-    };
-  }
-}
-
-async function handleMainPushClick(e) {
-  if (e) e.preventDefault();
-
-  if (!navigator.onLine) {
-    alert("You appear to be offline or in Airplane Mode. Please reconnect to enable push alerts.");
-    return;
-  }
-
-  if (currentSubscription) {
-    await unsubscribeUserFromPush();
-  } else {
-    await subscribeUserToPush();
-  }
-}
-
-async function subscribeUserToPush() {
-  try {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        alert("Notification permission was denied. Please allow notifications in iPad Settings > Safari.");
-        return;
+    try {
+      await webpush.sendNotification(pushSub, payload);
+    } catch (err) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await subDoc.destroy({ useMasterKey: true });
       }
     }
-
-    const reg = await navigator.serviceWorker.ready;
-    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: applicationServerKey
-    });
-    
-    currentSubscription = sub;
-    await saveSubscriptionToBack4App(sub);
-    updateMainToggleUI(true);
-    
-    await loadShows();
-    await loadRecentActivity();
-  } catch (err) {
-    console.error('Failed to subscribe:', err);
-    alert(`Could not enable notifications: ${err.message || err}`);
-    updateMainToggleUI(false);
   }
 }
-
-async function unsubscribeUserFromPush() {
-  if (!currentSubscription) return;
-
-  try {
-    await currentSubscription.unsubscribe();
-    await removeSubscriptionFromBack4App(currentSubscription);
-    currentSubscription = null;
-    updateMainToggleUI(false);
-    await loadShows();
-    await loadRecentActivity();
-  } catch (err) {
-    console.error('Failed to unsubscribe:', err);
-    alert(`Could not disable notifications: ${err.message || err}`);
-  }
-}
-
-async function saveSubscriptionToBack4App(sub) {
-  const PushSub = Parse.Object.extend("PushSubscription");
-  const query = new Parse.Query(PushSub);
-  query.equalTo("endpoint", sub.endpoint);
-  let record = await query.first();
-  
-  if (!record) {
-    record = new PushSub();
-  }
-  
-  record.set("endpoint", sub.endpoint);
-  record.set("keys", sub.toJSON().keys);
-  await record.save();
-}
-
-async function removeSubscriptionFromBack4App(sub) {
-  const PushSub = Parse.Object.extend("PushSubscription");
-  const query = new Parse.Query(PushSub);
-  query.equalTo("endpoint", sub.endpoint);
-  const record = await query.first();
-  if (record) {
-    await record.destroy();
-  }
-}
-
-function updateMainToggleUI(isEnabled) {
-  const bellIcon = document.getElementById('main-bell-icon');
-  const statusText = document.getElementById('main-push-status');
-  if (!bellIcon || !statusText) return;
-
-  if (isEnabled) {
-    bellIcon.classList.remove('text-slate-400');
-    bellIcon.classList.add('text-blue-400', 'fill-blue-400/20');
-    statusText.textContent = "Push Alerts On";
-  } else {
-    bellIcon.classList.remove('text-blue-400', 'fill-blue-400/20');
-    bellIcon.classList.add('text-slate-400');
-    statusText.textContent = "Push Alerts Off";
-  }
-}
-
-async function loadShows() {
-  const container = document.getElementById('shows-container');
-  let url = `https://api.themoviedb.org/3/trending/tv/day?api_key=${TMDB_API_KEY}&page=${currentPage}`;
-  
-  if (currentSearchQuery.trim().length > 0) {
-    url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(currentSearchQuery)}&page=${currentPage}`;
-  }
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    await renderShows(data.results || []);
-    
-    const pageIndicator = document.getElementById('page-indicator');
-    const prevBtn = document.getElementById('prev-page-btn');
-    const nextBtn = document.getElementById('next-page-btn');
-
-    if (pageIndicator) pageIndicator.textContent = `Page ${data.page || 1} of ${data.total_pages || 1}`;
-    if (prevBtn) prevBtn.disabled = currentPage <= 1;
-    if (nextBtn) nextBtn.disabled = currentPage >= (data.total_pages || 1);
-  } catch (err) {
-    console.error('Error fetching TMDB shows:', err);
-    if (container) container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 glass-card rounded-2xl">Failed to load catalog.</div>`;
-  }
-}
-
-async function renderShows(shows) {
-  const container = document.getElementById('shows-container');
-  if (!container) return;
-
-  if (shows.length === 0) {
-    container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 glass-card rounded-2xl">No shows found.</div>`;
-    return;
-  }
-  
-  const activeShowSubs = await getActiveShowSubscriptions();
-
-  container.innerHTML = shows.map(show => {
-    const isSubscribed = activeShowSubs.includes(String(show.id));
-    const posterUrl = show.poster_path 
-      ? `https://image.tmdb.org/t/p/w342${show.poster_path}` 
-      : 'https://via.placeholder.com/342x513?text=No+Cover';
-
-    return `
-      <div class="glass-card rounded-2xl overflow-hidden flex flex-col group relative">
-        <div class="aspect-[2/3] w-full overflow-hidden bg-slate-900 relative">
-          <img src="${posterUrl}" alt="${show.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-          
-          <button 
-            onclick="window.toggleAlert('${show.id}', ${!isSubscribed})" 
-            class="absolute top-3 right-3 p-2.5 rounded-full glass-panel transition-all ${
-              isSubscribed ? 'bg-blue-600/80 text-white border-blue-400' : 'text-slate-300 hover:text-white'
-            }"
-            title="${isSubscribed ? 'Disable Alert' : 'Enable Alert'}"
-          >
-            <svg class="w-4 h-4 ${isSubscribed ? 'fill-current' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 01-5.714 0" />
-            </svg>
-          </button>
-        </div>
-        <div class="p-3.5 flex-grow flex flex-col justify-between">
-          <h3 class="font-semibold text-sm text-white line-clamp-1">${show.name}</h3>
-          <span class="text-xs text-slate-400 mt-1">${show.first_air_date ? show.first_air_date.split('-')[0] : 'N/A'}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-window.toggleAlert = async function(showId, enable) {
-  if (!currentSubscription) {
-    alert("Please enable Master Push Alerts first.");
-    return;
-  }
-
-  try {
-    await Parse.Cloud.run("toggleShowSubscription", {
-      endpoint: currentSubscription.endpoint,
-      showId: String(showId),
-      enabled: enable
-    });
-
-    await loadShows();
-    await loadRecentActivity();
-  } catch (err) {
-    console.error("Error toggling alert:", err);
-    alert(`Could not update alert: ${err.message || err}`);
-  }
-};
-
-async function getActiveShowSubscriptions() {
-  if (!currentSubscription) return [];
-  try {
-    return await Parse.Cloud.run("getUserShowSubscriptions", { endpoint: currentSubscription.endpoint });
-  } catch {
-    return [];
-  }
-}
-
-async function loadRecentActivity() {
-  const container = document.getElementById('activity-container');
-  if (!container) return;
-
-  if (!currentSubscription) {
-    container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 glass-card rounded-2xl">Enable push alerts to view active subscriptions.</div>`;
-    return;
-  }
-
-  const subscribedIds = await getActiveShowSubscriptions();
-  if (subscribedIds.length === 0) {
-    container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 glass-card rounded-2xl">No active show subscriptions.</div>`;
-    return;
-  }
-
-  try {
-    const showPromises = subscribedIds.map(id => 
-      fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${TMDB_API_KEY}`).then(res => res.json())
-    );
-    const shows = await Promise.all(showPromises);
-
-    container.innerHTML = shows.map(show => {
-      const posterUrl = show.poster_path 
-        ? `https://image.tmdb.org/t/p/w185${show.poster_path}` 
-        : 'https://via.placeholder.com/185x278?text=No+Cover';
-
-      const lastAir = show.last_episode_to_air 
-        ? `S${show.last_episode_to_air.season_number}E${show.last_episode_to_air.episode_number} (${show.last_episode_to_air.air_date})` 
-        : 'N/A';
-
-      const nextAir = show.next_episode_to_air 
-        ? `S${show.next_episode_to_air.season_number}E${show.next_episode_to_air.episode_number} (${show.next_episode_to_air.air_date})` 
-        : 'TBA / Ended';
-
-      return `
-        <div class="glass-card p-4 rounded-2xl flex gap-4 relative items-center" id="activity-card-${show.id}">
-          <img src="${posterUrl}" alt="${show.name}" class="w-16 h-24 object-cover rounded-xl">
-          <div class="flex-grow space-y-1">
-            <h3 class="font-semibold text-white text-sm line-clamp-1">${show.name}</h3>
-            <p class="text-xs text-slate-300"><strong>Last:</strong> ${lastAir}</p>
-            <p class="text-xs text-slate-300"><strong>Next:</strong> ${nextAir}</p>
-          </div>
-          <button onclick="window.deleteShowSubscription('${show.id}')" class="p-2 text-slate-400 hover:text-red-400 transition" title="Delete">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-            </svg>
-          </button>
-        </div>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error('Error loading activity feed:', err);
-  }
-}
-
-window.deleteShowSubscription = async function(showId) {
-  if (!currentSubscription) return;
-
-  try {
-    await Parse.Cloud.run("toggleShowSubscription", {
-      endpoint: currentSubscription.endpoint,
-      showId: String(showId),
-      enabled: false
-    });
-
-    await loadShows();
-    await loadRecentActivity();
-  } catch (err) {
-    console.error("Error deleting subscription:", err);
-  }
-};
