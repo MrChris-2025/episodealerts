@@ -3,7 +3,6 @@ const axios = require('axios');
 
 const TMDB_API_KEY = '1070730380f5fee0d87cf0382670b255';
 
-// Added '=' padding so Web-Push decodes the P-256 public key properly
 webpush.setVapidDetails(
   'mailto:holdenafart@protonmail.com',
   'BA8NXZjt4Aj2NsNFZwFQJPvNHoGdz87nVB_0MJCQdbXFMhgOmkWsd-STbCKtgPIBPrWF7-Umqrili8Ef4xS352E=',
@@ -69,7 +68,6 @@ Parse.Cloud.define('getUserShowSubscriptions', async (request) => {
   return subObj ? subObj.get('subscribedShows') || [] : [];
 });
 
-// Alias both function names so QStash works regardless of endpoint path
 const runEpisodeCheck = async (request) => {
   const EpisodeState = Parse.Object.extend('EpisodeState');
   const subQuery = new Parse.Query('PushSubscription');
@@ -84,7 +82,6 @@ const runEpisodeCheck = async (request) => {
   const uniqueShowIds = Array.from(showIdsSet);
   let checked = 0;
 
-  // Build current date string and yesterday/tomorrow windows to catch timezone offsets
   const now = new Date();
   const datesToCheck = [
     now.toISOString().split('T')[0],
@@ -101,7 +98,6 @@ const runEpisodeCheck = async (request) => {
 
       if (!nextEp || !nextEp.air_date) continue;
 
-      // Check if episode air_date falls within the target date window
       if (datesToCheck.includes(nextEp.air_date)) {
         const episodeKey = `${showId}_S${nextEp.season_number}E${nextEp.episode_number}`;
 
@@ -133,7 +129,6 @@ const runEpisodeCheck = async (request) => {
   return { status: 'ok', showsChecked: checked };
 };
 
-// Register under both function names to fix QStash errors
 Parse.Cloud.define('checkEpisodes', runEpisodeCheck);
 Parse.Cloud.define('checkNewEpisodes', runEpisodeCheck);
 
